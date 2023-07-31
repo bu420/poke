@@ -1,2 +1,3 @@
 # poke
- win32 software rasterizer
+
+C++ software rasterizer.
