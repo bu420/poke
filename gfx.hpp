@@ -4,6 +4,7 @@
 #include <array>
 #include <optional>
 #include <functional>
+#include <string>
 
 #include "math.hpp"
 
@@ -55,6 +56,14 @@ namespace poke {
         attribute(const vec4f& value) : data{ value.x(), value.y(), value.z(), value.w() }, count(4) {}
 
 		attribute lerp(const attribute& other, float amount) const;
+
+		void operator += (const attribute& a) {
+			assert(count == a.count && "Attributes must match.");
+
+			for (int i = 0; i < count; i++) {
+				data[i] += a.data[i];
+			}
+		}
 	};
 
 	struct vertex {
@@ -77,4 +86,19 @@ namespace poke {
         optional_reference<depth_buffer> depth_buf,
         std::array<vertex, 3> vertices,
         std::function<byte3(const vertex&)> pixel_shader_callback);
+
+	struct mesh {
+		struct face {
+			std::array<int, 3> pos_indices;
+			std::array<int, 3> tex_coord_indices;
+			std::array<int, 3> normal_indices;
+		};
+
+		bool load_obj(const std::string& path);
+
+		std::vector<vec3f> positions;
+		std::vector<vec2f> tex_coords;
+		std::vector<vec3f> normals;
+		std::vector<face> faces;
+	};
 }

@@ -142,6 +142,7 @@
     <ClInclude Include="gfx.hpp" />
     <ClInclude Include="math.hpp" />
     <ClInclude Include="platform.hpp" />
+    <ClInclude Include="script\vec.hpp" />
     <ClInclude Include="vec.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -149,6 +150,12 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="math.cpp" />
     <ClCompile Include="platform.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitattributes" />
+    <None Include=".gitignore" />
+    <None Include="LICENSE" />
+    <None Include="README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

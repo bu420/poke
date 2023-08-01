@@ -14,54 +14,15 @@ int main() {
 
     po::initialize();
 
+    po::mesh mesh;
+    std::cout << "Loading assets..." << std::endl;
+    assert(mesh.load_obj("assets/bullfrog.obj"));
+    std::cout << "Assets loaded." << std::endl;
+
     po::window win("Roterande Kub", W, H);
 
     po::color_buffer color_buf(W, H);
     po::depth_buffer depth_buf(W, H);
-
-    const po::vertex cube_vertices[36] = {
-        po::vertex({-0.5f,-0.5f,-0.5f,1.f},po::attribute(po::vec3f(255.f,0.f,0.f))),
-        po::vertex({-0.5f,0.5f,-0.5f,1.f},po::attribute(po::vec3f(255.f,0.f,0.f))),
-        po::vertex({0.5f,0.5f,-0.5f,1.f},po::attribute(po::vec3f(255.f,0.f,0.f))),
-        po::vertex({-0.5f,-0.5f,-0.5f,1.f},po::attribute(po::vec3f(255.f,0.f,0.f))),
-        po::vertex({0.5f,0.5f,-0.5f,1.f},po::attribute(po::vec3f(255.f,0.f,0.f))),
-        po::vertex({0.5f,-0.5f,-0.5f,1.f},po::attribute(po::vec3f(255.f,0.f,0.f))),
-
-        po::vertex({0.5f,-0.5f,-0.5f,1.f},po::attribute(po::vec3f(0.f,255.f,0.f))),
-        po::vertex({0.5f,0.5f,-0.5f,1.f},po::attribute(po::vec3f(0.f,255.f,0.f))),
-        po::vertex({0.5f,0.5f,0.5f,1.f},po::attribute(po::vec3f(0.f,255.f,0.f))),
-        po::vertex({0.5f,-0.5f,-0.5f,1.f},po::attribute(po::vec3f(0.f,255.f,0.f))),
-        po::vertex({0.5f,0.5f,0.5f,1.f},po::attribute(po::vec3f(0.f,255.f,0.f))),
-        po::vertex({0.5f,-0.5f,0.5f,1.f},po::attribute(po::vec3f(0.f,255.f,0.f))),
-
-        po::vertex({0.5f,-0.5f,0.5f,1.f},po::attribute(po::vec3f(0.f,0.f,255.f))),
-        po::vertex({0.5f,0.5f,0.5f,1.f},po::attribute(po::vec3f(0.f,0.f,255.f))),
-        po::vertex({-0.5f,0.5f,0.5f,1.f},po::attribute(po::vec3f(0.f,0.f,255.f))),
-        po::vertex({0.5f,-0.5f,0.5f,1.f},po::attribute(po::vec3f(0.f,0.f,255.f))),
-        po::vertex({-0.5f,0.5f,0.5f,1.f},po::attribute(po::vec3f(0.f,0.f,255.f))),
-        po::vertex({-0.5f,-0.5f,0.5f,1.f},po::attribute(po::vec3f(0.f,0.f,255.f))),
-
-        po::vertex({-0.5f,-0.5f,0.5f,1.f},po::attribute(po::vec3f(255.f,0.f,255.f))),
-        po::vertex({-0.5f,0.5f,0.5f,1.f},po::attribute(po::vec3f(255.f,0.f,255.f))),
-        po::vertex({-0.5f,0.5f,-0.5f,1.f},po::attribute(po::vec3f(255.f,0.f,255.f))),
-        po::vertex({-0.5f,-0.5f,0.5f,1.f},po::attribute(po::vec3f(255.f,0.f,255.f))),
-        po::vertex({-0.5f,0.5f,-0.5f,1.f},po::attribute(po::vec3f(255.f,0.f,255.f))),
-        po::vertex({-0.5f,-0.5f,-0.5f,1.f},po::attribute(po::vec3f(255.f,0.f,255.f))),
-
-        po::vertex({-0.5f,0.5f,-0.5f,1.f},po::attribute(po::vec3f(0.f,255.f,255.f))),
-        po::vertex({-0.5f,0.5f,0.5f,1.f},po::attribute(po::vec3f(0.f,255.f,255.f))),
-        po::vertex({0.5f,0.5f,0.5f,1.f},po::attribute(po::vec3f(0.f,255.f,255.f))),
-        po::vertex({-0.5f,0.5f,-0.5f,1.f},po::attribute(po::vec3f(0.f,255.f,255.f))),
-        po::vertex({0.5f,0.5f,0.5f,1.f},po::attribute(po::vec3f(0.f,255.f,255.f))),
-        po::vertex({0.5f,0.5f,-0.5f,1.f},po::attribute(po::vec3f(0.f,255.f,255.f))),
-
-        po::vertex({0.5f,-0.5f,0.5f,1.f},po::attribute(po::vec3f(255.f,255.f,0.f))),
-        po::vertex({-0.5f,-0.5f,0.5f,1.f},po::attribute(po::vec3f(255.f,255.f,0.f))),
-        po::vertex({-0.5f,-0.5f,-0.5f,1.f},po::attribute(po::vec3f(255.f,255.f,0.f))),
-        po::vertex({0.5f,-0.5f,0.5f,1.f},po::attribute(po::vec3f(255.f,255.f,0.f))),
-        po::vertex({-0.5f,-0.5f,-0.5f,1.f},po::attribute(po::vec3f(255.f,255.f,0.f))),
-        po::vertex({0.5f,-0.5f,-0.5f,1.f},po::attribute(po::vec3f(255.f,255.f,0.f)))
-    };
 
     const po::mat4 projection = po::perspective(
         H / static_cast<float>(W), 
@@ -69,7 +30,7 @@ int main() {
         .1f, 
         1000.f);
 
-    const po::vec3f camera_pos(1.f, 1.f, 1.f);
+    const po::vec3f camera_pos(20.f, 20.f, 20.f);
     const po::mat4 view = po::look_at(camera_pos, { 0.f, 0.f, 0.f }, { 0.f, -1.f, 0.f });
 
     while (!win.get_should_close()) {
@@ -85,38 +46,40 @@ int main() {
 
         po::mat4 mvp = model * view * projection;
 
-        // For each of of the cube's triangles.
-        for (int i = 0; i < 12; i++) {
-            std::array<po::vertex, 3> vertices;
+        // Make a copy that we can mutate.
+        std::vector<po::vec4f> positions(mesh.positions.size());
+        for (int i = 0; i < mesh.positions.size(); i++) {
+            positions[i].x() = mesh.positions[i].x();
+            positions[i].y() = mesh.positions[i].y();
+            positions[i].z() = mesh.positions[i].z();
+            positions[i].w() = 1.f;
+        }
 
-            for (int j = 0; j < 3; j++) {
-                vertices[j] = cube_vertices[i * 3 + j];
+        // Local space to homogeneous clip space.
+        for (auto& p : positions) {
+            p *= mvp;
+        }
 
-                // Multiply position with MVP matrix, world space -> clip space.
-                vertices[j].position *= mvp;
-            }
+        // Render mesh.
+        for (const auto& face : mesh.faces) {
+            std::array<po::vertex, 3> vertices = {
+                po::vertex(positions[face.pos_indices[0]], po::attribute(po::vec3f(255.f, 0.f, 0.f))),
+                po::vertex(positions[face.pos_indices[1]], po::attribute(po::vec3f(0.f, 255.f, 0.f))),
+                po::vertex(positions[face.pos_indices[2]], po::attribute(po::vec3f(0.f, 0.f, 255.f)))
+            };
 
             po::render_triangle(color_buf, depth_buf, vertices,
                 [](const po::vertex& vertex) -> po::byte3 {
                     po::vec4f pos = vertex.position;
-                    
+
                     po::vec3f color(
                         vertex.attributes[0].data[0],
                         vertex.attributes[0].data[1],
                         vertex.attributes[0].data[2]);
 
-                    color *= std::sin(H - (pos.y() / H)) * 1.5f;
-                    color += H / 4.f;
-
-                    if (pos.x() > 300) {
-                        color.r() = 255;
-                    }
-
-                    color *= std::cos(pos.x() / W);
-
-                    return { 
-                        static_cast<unsigned char>(color.x()), 
-                        static_cast<unsigned char>(color.y()), 
+                    return {
+                        static_cast<unsigned char>(color.x()),
+                        static_cast<unsigned char>(color.y()),
                         static_cast<unsigned char>(color.z())
                     };
                 });

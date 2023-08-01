@@ -27,6 +27,9 @@
     <ClInclude Include="vec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="script\vec.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="gfx.cpp">
@@ -41,5 +44,11 @@
     <ClCompile Include="platform.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" />
+    <None Include="LICENSE" />
+    <None Include=".gitignore" />
+    <None Include=".gitattributes" />
   </ItemGroup>
 </Project>

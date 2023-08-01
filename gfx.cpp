@@ -1,8 +1,10 @@
 #include "gfx.hpp"
 
-using namespace poke;
-
 #include <algorithm>
+#include <fstream>
+#include <ranges>
+
+using namespace poke;
 
 struct line3d {
     vertex start;
@@ -78,9 +80,7 @@ struct line3d_stepper {
 
         // Increment attributes.
         for (int j = 0; j < current.attribute_count; j++) {
-            for (int k = 0; k < current.attributes[j].count; k++) {
-                current.attributes[j].data[k] += increment.attributes[j].data[k];
-            }
+            current.attributes[j] += increment.attributes[j];
         }
 
         return true;
@@ -182,6 +182,13 @@ void poke::render_triangle(
                 int y = static_cast<int>(line_x.current.position.y());
 
                 if (depth_buf.has_value()) {
+                    /*assert(x >= 0 && x < depth_buf.value().get().get_width() &&
+                        y >= 0 && y < depth_buf.value().get().get_height());*/
+                    if (x < 0 || x >= depth_buf.value().get().get_width() ||
+                        y < 0 || y >= depth_buf.value().get().get_height()) {
+                        continue;
+                    }
+
                     float z = line_x.current.position.z();
 
                     if (z < depth_buf.value().get().at(x, y)) {
@@ -194,6 +201,14 @@ void poke::render_triangle(
                 }
 
                 if (color_buf.has_value()) {
+                    /*assert(x >= 0 && x < color_buf.value().get().get_width() &&
+                        y >= 0 && y < color_buf.value().get().get_height());*/
+                    if (x < 0 || x >= color_buf.value().get().get_width() ||
+                        y < 0 || y >= color_buf.value().get().get_height()) {
+                        continue;
+                    }
+
+
                     color_buf.value().get().at(x, y) = pixel_shader_callback(line_x.current);
                 }
             } while (line_x.step());
@@ -219,4 +234,71 @@ void poke::render_triangle(
         // Bottom (flat top).
         render_triangle_from_lines(line3d{ vertices[1], vertices[2] }, line3d{ vertex3, vertices[2] });
     }
+}
+
+std::vector<std::string> split(const std::string& original, const std::string& separator) {
+    std::vector<std::string> tokens;
+
+    auto pos = original.begin();
+    auto end = original.end();
+
+    while (pos != end) {
+        auto next_separator = std::find_first_of(pos, end, separator.begin(), separator.end());
+
+        tokens.push_back(std::string(pos, next_separator));
+
+        // Skip all consecutive occurences of the separator.
+        pos = std::find_first_of(next_separator, end, separator.begin(), separator.end(),
+            [](auto& a, auto& b) {
+                return a != b;
+            });
+    }
+
+    return tokens;
+}
+
+bool mesh::load_obj(const std::string& path) {
+    std::ifstream file(path);
+
+    if (!file.is_open()) {
+        return false;
+    }
+
+    for (std::string line; std::getline(file, line); ) {
+        std::vector<std::string> tokens = split(line, " ");
+
+        if (tokens.size() == 0) {
+            continue;
+        }
+
+        if (tokens[0] == "v") {
+            positions.push_back(vec3f(std::stof(tokens[1]), std::stof(tokens[2]), std::stof(tokens[3])));
+        }
+        else if (tokens[0] == "vt") {
+            tex_coords.push_back(vec2f(std::stof(tokens[1]), std::stof(tokens[2])));
+        }
+        else if (tokens[0] == "vn") {
+            normals.push_back(vec3f(std::stof(tokens[1]), std::stof(tokens[2]), std::stof(tokens[3])));
+        }
+        else if (tokens[0] == "f") {
+            int triangle_count = tokens.size() - 3;
+
+            for (int i = 0; i < triangle_count; i++) {
+                face face;
+                
+                for (int j = 0; j < 3; j++) {
+                    std::vector<std::string> face_tokens = split(tokens[i + 1 + j], "/");
+
+                    face.pos_indices[j] = std::stoi(face_tokens[0]) - 1;
+                    face.tex_coord_indices[j] = std::stoi(face_tokens[1]) - 1;
+                    face.normal_indices[j] = std::stoi(face_tokens[2]) - 1;
+                }
+
+                faces.push_back(face);
+            }
+        }
+    }
+
+    file.close();
+    return true;
 }
