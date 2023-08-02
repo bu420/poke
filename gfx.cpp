@@ -141,13 +141,15 @@ void poke::render_triangle(
 
     // Viewport transformation. 
     // Scale from [-1, 1] to color buffer size.
+    // Round X and Y to nearest pixel pos.
     for (auto& vertex : vertices) {
         auto& pos = vertex.position;
 
-        pos.x() = (pos.x() + 1) / 2.f * framebuffer_size.x();
-        pos.y() = (pos.y() + 1) / 2.f * framebuffer_size.y();
+        pos.x() = std::round((pos.x() + 1) / 2.f * framebuffer_size.x());
+        pos.y() = std::round((pos.y() + 1) / 2.f * framebuffer_size.y());
     }
 
+    // Create aliases for positions.
     vec4f& pos0 = vertices[0].position;
     vec4f& pos1 = vertices[1].position;
     vec4f& pos2 = vertices[2].position;
@@ -182,12 +184,8 @@ void poke::render_triangle(
                 int y = static_cast<int>(line_x.current.position.y());
 
                 if (depth_buf.has_value()) {
-                    /*assert(x >= 0 && x < depth_buf.value().get().get_width() &&
-                        y >= 0 && y < depth_buf.value().get().get_height());*/
-                    if (x < 0 || x >= depth_buf.value().get().get_width() ||
-                        y < 0 || y >= depth_buf.value().get().get_height()) {
-                        continue;
-                    }
+                    assert(x >= 0 && x < depth_buf.value().get().get_width() &&
+                        y >= 0 && y < depth_buf.value().get().get_height());
 
                     float z = line_x.current.position.z();
 
@@ -201,13 +199,8 @@ void poke::render_triangle(
                 }
 
                 if (color_buf.has_value()) {
-                    /*assert(x >= 0 && x < color_buf.value().get().get_width() &&
-                        y >= 0 && y < color_buf.value().get().get_height());*/
-                    if (x < 0 || x >= color_buf.value().get().get_width() ||
-                        y < 0 || y >= color_buf.value().get().get_height()) {
-                        continue;
-                    }
-
+                    assert(x >= 0 && x < color_buf.value().get().get_width() &&
+                        y >= 0 && y < color_buf.value().get().get_height());
 
                     color_buf.value().get().at(x, y) = pixel_shader_callback(line_x.current);
                 }

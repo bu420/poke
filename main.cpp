@@ -16,10 +16,13 @@ int main() {
 
     po::mesh mesh;
     std::cout << "Loading assets..." << std::endl;
-    assert(mesh.load_obj("assets/bullfrog.obj"));
-    std::cout << "Assets loaded." << std::endl;
+    if (!mesh.load_obj("assets/bullfrog.obj")) {
+        std::cout << "Failed to load assets." << std::endl;
+        return -1;
+    }
+    std::cout << "Done." << std::endl;
 
-    po::window win("Roterande Kub", W, H);
+    po::window win("poke", W, H);
 
     po::color_buffer color_buf(W, H);
     po::depth_buffer depth_buf(W, H);
@@ -63,19 +66,17 @@ int main() {
         // Render mesh.
         for (const auto& face : mesh.faces) {
             std::array<po::vertex, 3> vertices = {
-                po::vertex(positions[face.pos_indices[0]], po::attribute(po::vec3f(255.f, 0.f, 0.f))),
-                po::vertex(positions[face.pos_indices[1]], po::attribute(po::vec3f(0.f, 255.f, 0.f))),
-                po::vertex(positions[face.pos_indices[2]], po::attribute(po::vec3f(0.f, 0.f, 255.f)))
+                po::vertex(positions[face.pos_indices[0]], po::attribute(mesh.normals[face.normal_indices[0]])),
+                po::vertex(positions[face.pos_indices[1]], po::attribute(mesh.normals[face.normal_indices[1]])),
+                po::vertex(positions[face.pos_indices[2]], po::attribute(mesh.normals[face.normal_indices[2]]))
             };
 
             po::render_triangle(color_buf, depth_buf, vertices,
                 [](const po::vertex& vertex) -> po::byte3 {
                     po::vec4f pos = vertex.position;
 
-                    po::vec3f color(
-                        vertex.attributes[0].data[0],
-                        vertex.attributes[0].data[1],
-                        vertex.attributes[0].data[2]);
+                    po::vec3f normal(vertex.attributes[0].data.xyz());
+                    po::vec3f color((normal + 1.f) * 128.f);
 
                     return {
                         static_cast<unsigned char>(color.x()),
