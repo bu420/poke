@@ -30,6 +30,9 @@
     <ClInclude Include="script\vec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="util.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="gfx.cpp">
@@ -42,6 +45,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="platform.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="util.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

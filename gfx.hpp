@@ -7,11 +7,9 @@
 #include <string>
 
 #include "math.hpp"
+#include "util.hpp"
 
 namespace poke {
-	template<typename T> using optional_reference = 
-		std::optional<std::reference_wrapper<T>>;
-
 	struct byte3 {
 		unsigned char x, y, z;
 	};
@@ -89,9 +87,13 @@ namespace poke {
 
 	struct mesh {
 		struct face {
-			std::array<int, 3> pos_indices;
-			std::array<int, 3> tex_coord_indices;
-			std::array<int, 3> normal_indices;
+			struct index {
+				int pos;
+				int tex_coord;
+				int normal;
+			};
+
+			std::array<index, 3> indices;
 		};
 
 		bool load_obj(const std::string& path);

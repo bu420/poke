@@ -44,6 +44,7 @@ int main() {
 
         // Model matrix with a rotation animation.
         po::mat4 model(1);
+        model = model.rotate_x(90.f * (std::numbers::pi / 180));
         model = model.rotate_y(static_cast<float>(po::get_elapsed_time() * std::numbers::pi / 2000));
         model = model.rotate_z(static_cast<float>(po::get_elapsed_time() * std::numbers::pi / 4000));
 
@@ -66,9 +67,9 @@ int main() {
         // Render mesh.
         for (const auto& face : mesh.faces) {
             std::array<po::vertex, 3> vertices = {
-                po::vertex(positions[face.pos_indices[0]], po::attribute(mesh.normals[face.normal_indices[0]])),
-                po::vertex(positions[face.pos_indices[1]], po::attribute(mesh.normals[face.normal_indices[1]])),
-                po::vertex(positions[face.pos_indices[2]], po::attribute(mesh.normals[face.normal_indices[2]]))
+                po::vertex(positions[face.indices[0].pos], po::attribute(mesh.normals[face.indices[0].normal])),
+                po::vertex(positions[face.indices[1].pos], po::attribute(mesh.normals[face.indices[1].normal])),
+                po::vertex(positions[face.indices[2].pos], po::attribute(mesh.normals[face.indices[2].normal]))
             };
 
             po::render_triangle(color_buf, depth_buf, vertices,
@@ -76,7 +77,7 @@ int main() {
                     po::vec4f pos = vertex.position;
 
                     po::vec3f normal(vertex.attributes[0].data.xyz());
-                    po::vec3f color((normal + 1.f) * 128.f);
+                    po::vec3f color((normal + 1.f) * 127.f);
 
                     return {
                         static_cast<unsigned char>(color.x()),

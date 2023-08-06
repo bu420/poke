@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <streambuf>
 #include <ranges>
 
 using namespace poke;
@@ -52,6 +53,7 @@ struct line3d_stepper {
         // Calculate how much to increment each step.
         if (steps > 0) {
             increment.position = difference / static_cast<float>(steps);
+            increment.attribute_count = current.attribute_count;
 
             assert(line.start.attribute_count == line.end.attribute_count);
 
@@ -61,9 +63,8 @@ struct line3d_stepper {
                 for (int j = 0; j < line.start.attributes[i].count; j++) {
                     increment.attributes[i].data[j] =
                         (line.end.attributes[i].data[j] - line.start.attributes[i].data[j]) / steps;
-
-                    increment.attributes[i].count = line.start.attributes[i].count;
                 }
+                increment.attributes[i].count = line.start.attributes[i].count;
             }
         }
     }
@@ -150,19 +151,19 @@ void poke::render_triangle(
     }
 
     // Create aliases for positions.
-    vec4f& pos0 = vertices[0].position;
-    vec4f& pos1 = vertices[1].position;
-    vec4f& pos2 = vertices[2].position;
+    vec4f& p0 = vertices[0].position;
+    vec4f& p1 = vertices[1].position;
+    vec4f& p2 = vertices[2].position;
 
     // Sort vertices by Y.
-    if (pos0.y() > pos1.y()) {
-        std::swap(pos0, pos1);
+    if (p0.y() > p1.y()) {
+        std::swap(vertices[0], vertices[1]);
     }
-    if (pos0.y() > pos2.y()) {
-        std::swap(pos0, pos2);
+    if (p0.y() > p2.y()) {
+        std::swap(vertices[0], vertices[2]);
     }
-    if (pos1.y() > pos2.y()) {
-        std::swap(pos1, pos2);
+    if (p1.y() > p2.y()) {
+        std::swap(vertices[1], vertices[2]);
     }
 
     auto render_triangle_from_lines = [&](line3d a, line3d b) {
@@ -209,16 +210,16 @@ void poke::render_triangle(
     };
 
     // Check if the top of the triangle is flat.
-    if (pos0.y() == pos1.y()) {
+    if (p0.y() == p1.y()) {
         render_triangle_from_lines(line3d{ vertices[0], vertices[2] }, line3d{ vertices[1], vertices[2] });
     }
     // Check if the bottom is flat.
-    else if (pos1.y() == pos2.y()) {
+    else if (p1.y() == p2.y()) {
         render_triangle_from_lines(line3d{ vertices[0], vertices[1] }, line3d{ vertices[0], vertices[2] });
     }
     // Else split into two smaller triangles.
     else {
-        float alpha_split = (pos1.y() - pos0.y()) / (pos2.y() - pos0.y());
+        float alpha_split = (p1.y() - p0.y()) / (p2.y() - p0.y());
         vertex vertex3 = vertices[0].lerp(vertices[2], alpha_split);
 
         // Top (flat bottom).
@@ -229,27 +230,6 @@ void poke::render_triangle(
     }
 }
 
-std::vector<std::string> split(const std::string& original, const std::string& separator) {
-    std::vector<std::string> tokens;
-
-    auto pos = original.begin();
-    auto end = original.end();
-
-    while (pos != end) {
-        auto next_separator = std::find_first_of(pos, end, separator.begin(), separator.end());
-
-        tokens.push_back(std::string(pos, next_separator));
-
-        // Skip all consecutive occurences of the separator.
-        pos = std::find_first_of(next_separator, end, separator.begin(), separator.end(),
-            [](auto& a, auto& b) {
-                return a != b;
-            });
-    }
-
-    return tokens;
-}
-
 bool mesh::load_obj(const std::string& path) {
     std::ifstream file(path);
 
@@ -257,8 +237,10 @@ bool mesh::load_obj(const std::string& path) {
         return false;
     }
 
-    for (std::string line; std::getline(file, line); ) {
-        std::vector<std::string> tokens = split(line, " ");
+    std::string file_content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+    for (const auto& line : string_split(file_content, "\n")) {
+        const auto& tokens = string_split(line, " ");
 
         if (tokens.size() == 0) {
             continue;
@@ -274,18 +256,25 @@ bool mesh::load_obj(const std::string& path) {
             normals.push_back(vec3f(std::stof(tokens[1]), std::stof(tokens[2]), std::stof(tokens[3])));
         }
         else if (tokens[0] == "f") {
-            int triangle_count = tokens.size() - 3;
+            const int index_count = tokens.size() - 1;
+            std::vector<mesh::face::index> indices(index_count);
 
-            for (int i = 0; i < triangle_count; i++) {
-                face face;
+            for (int i = 0; i < index_count; i++) {
+                const auto& face_tokens = string_split(tokens[1 + i], "/");
                 
-                for (int j = 0; j < 3; j++) {
-                    std::vector<std::string> face_tokens = split(tokens[i + 1 + j], "/");
+                // Remove 1 from each index to convert them from 1-based to 0-based.
+                indices[i].pos = std::stoi(face_tokens[0]) - 1;
+                indices[i].tex_coord = std::stoi(face_tokens[1]) - 1;
+                indices[i].normal = std::stoi(face_tokens[2]) - 1;
+            }
 
-                    face.pos_indices[j] = std::stoi(face_tokens[0]) - 1;
-                    face.tex_coord_indices[j] = std::stoi(face_tokens[1]) - 1;
-                    face.normal_indices[j] = std::stoi(face_tokens[2]) - 1;
-                }
+            const int face_count = index_count - 2;
+
+            for (int i = 0; i < face_count; i++) {
+                mesh::face face;
+                face.indices[0] = indices[(i * 2 + 0) % index_count];
+                face.indices[1] = indices[(i * 2 + 1) % index_count];
+                face.indices[2] = indices[(i * 2 + 2) % index_count];
 
                 faces.push_back(face);
             }

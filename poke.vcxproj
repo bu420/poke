@@ -143,6 +143,7 @@
     <ClInclude Include="math.hpp" />
     <ClInclude Include="platform.hpp" />
     <ClInclude Include="script\vec.hpp" />
+    <ClInclude Include="util.hpp" />
     <ClInclude Include="vec.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -150,6 +151,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="math.cpp" />
     <ClCompile Include="platform.cpp" />
+    <ClCompile Include="util.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitattributes" />
