@@ -4,13 +4,39 @@
 
 using namespace poke;
 
+mat3::mat3(float init) {
+    for (int col = 0; col < 3; col++) {
+        for (int row = 0; row < 3; row++) {
+            (*this)[col][row] = 0;
+        }
+    }
+    for (int i = 0; i < 3; i++) {
+        (*this)[i][i] = init;
+    }
+}
+
+mat3::mat3(const mat4& m) {
+    for (int col = 0; col < 3; col++) {
+        for (int row = 0; row < 3; row++) {
+            (*this)[col][row] = m[col][row];
+        }
+    }
+}
+
+vec3f& mat3::operator [] (int x) {
+    return m[x];
+}
+
+const vec3f& mat3::operator [] (int x) const {
+    return m[x];
+}
+
 mat4::mat4(float init) {
     for (int col = 0; col < 4; col++) {
         for (int row = 0; row < 4; row++) {
             (*this)[col][row] = 0;
         }
     }
-
     for (int i = 0; i < 4; i++) {
         (*this)[i][i] = init;
     }

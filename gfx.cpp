@@ -119,16 +119,19 @@ vertex vertex::lerp(const vertex& other, float amount) const {
     return result;
 }
 
-void poke::render_triangle(
+// This function assumes that the entire triangle is visible.
+void fill_triangle(
     optional_reference<color_buffer> color_buf,
     optional_reference<depth_buffer> depth_buf,
     std::array<vertex, 3> vertices,
-    std::function<byte3(const vertex&)> pixel_shader_callback) {
+    pixel_shader_callback pixel_shader) {
     assert(color_buf.has_value() || depth_buf.has_value() && "Either a color buffer, depth buffer or both must be present.");
 
     // W division (homogeneous clip space -> NDC space).
     for (auto& vertex : vertices) {
         auto& pos = vertex.position;
+
+        assert(pos.w() != 0);
 
         pos.x() /= pos.w();
         pos.y() /= pos.w();
@@ -141,16 +144,16 @@ void poke::render_triangle(
         vec2i(depth_buf.value().get().get_width(), depth_buf.value().get().get_height()));
 
     // Viewport transformation. 
-    // Scale from [-1, 1] to color buffer size.
-    // Round X and Y to nearest pixel pos.
+    // Convert [-1, 1] to framebuffer size.
+    // Round to nearest pixel pos.
     for (auto& vertex : vertices) {
         auto& pos = vertex.position;
 
-        pos.x() = std::round((pos.x() + 1) / 2.f * framebuffer_size.x());
-        pos.y() = std::round((pos.y() + 1) / 2.f * framebuffer_size.y());
+        pos.x() = std::round((pos.x() + 1) / 2.f * (framebuffer_size.x() - 1));
+        pos.y() = std::round((pos.y() + 1) / 2.f * (framebuffer_size.y() - 1));
     }
 
-    // Create aliases for positions.
+    // Position aliases.
     vec4f& p0 = vertices[0].position;
     vec4f& p1 = vertices[1].position;
     vec4f& p2 = vertices[2].position;
@@ -185,6 +188,9 @@ void poke::render_triangle(
                 int y = static_cast<int>(line_x.current.position.y());
 
                 if (depth_buf.has_value()) {
+                    if (!(x >= 0 && x < depth_buf.value().get().get_width() &&
+                        y >= 0 && y < depth_buf.value().get().get_height()))
+                        continue;
                     assert(x >= 0 && x < depth_buf.value().get().get_width() &&
                         y >= 0 && y < depth_buf.value().get().get_height());
 
@@ -203,7 +209,11 @@ void poke::render_triangle(
                     assert(x >= 0 && x < color_buf.value().get().get_width() &&
                         y >= 0 && y < color_buf.value().get().get_height());
 
-                    color_buf.value().get().at(x, y) = pixel_shader_callback(line_x.current);
+                    std::optional<byte3> color = pixel_shader(line_x.current);
+
+                    if (color.has_value()) {
+                        color_buf.value().get().at(x, y) = color.value();
+                    }
                 }
             } while (line_x.step());
         } while (line_a.step() && line_b.step());
@@ -219,14 +229,105 @@ void poke::render_triangle(
     }
     // Else split into two smaller triangles.
     else {
-        float alpha_split = (p1.y() - p0.y()) / (p2.y() - p0.y());
-        vertex vertex3 = vertices[0].lerp(vertices[2], alpha_split);
+        float lerp_amount = (p1.y() - p0.y()) / (p2.y() - p0.y());
+        vertex vertex3 = vertices[0].lerp(vertices[2], lerp_amount);
 
         // Top (flat bottom).
         render_triangle_from_lines(line3d{ vertices[0], vertices[1] }, line3d{ vertices[0], vertex3 });
 
         // Bottom (flat top).
         render_triangle_from_lines(line3d{ vertices[1], vertices[2] }, line3d{ vertex3, vertices[2] });
+    }
+}
+
+std::vector<vertex> triangle_clip_component(const std::vector<vertex>& vertices, int component_idx) {    
+    auto clip = [&](const std::vector<vertex>& vertices, float sign) {
+        std::vector<vertex> result;
+        result.reserve(vertices.size());
+
+        for (int i = 0; i < vertices.size(); i++) {
+            const vertex& curr_vertex = vertices[i];
+            const vertex& prev_vertex = vertices[(i - 1 + vertices.size()) % vertices.size()];
+
+            float curr_component = sign * curr_vertex.position[component_idx];
+            float prev_component = sign * prev_vertex.position[component_idx];
+
+            bool curr_is_inside = curr_component <= curr_vertex.position.w();
+            bool prev_is_inside = prev_component <= prev_vertex.position.w();
+
+            if (curr_is_inside != prev_is_inside) {
+                float lerp_amount =
+                    (prev_vertex.position.w() - prev_component) /
+                    ((prev_vertex.position.w() - prev_component) - (curr_vertex.position.w() - curr_component));
+
+                result.emplace_back(prev_vertex.lerp(curr_vertex, lerp_amount));
+            }
+
+            if (curr_is_inside) {
+                result.emplace_back(curr_vertex);
+            }
+        }
+
+        return result;
+    };
+
+    std::vector<vertex> result = clip(vertices, 1.0f);
+    if (result.empty()) {
+        return result;
+    }
+    return clip(result, -1.0f);
+}
+
+std::vector<vertex> triangle_clip(const std::array<vertex, 3>& vertices) {
+    // Clip X.
+    std::vector<vertex> result = triangle_clip_component({ vertices.begin(), vertices.end() }, 0);
+    if (result.empty()) {
+        return result;
+    }
+    // Clip Y.
+    result = triangle_clip_component(result, 1);
+    if (result.empty()) {
+        return result;
+    }
+    // Clip Z.
+    result = triangle_clip_component(result, 2);
+    return result;
+}
+
+void poke::render_triangle(
+    optional_reference<color_buffer> color_buf,
+    optional_reference<depth_buffer> depth_buf,
+    std::array<vertex, 3> vertices,
+    pixel_shader_callback pixel_shader) {
+    auto is_point_visible = [](const vec4f& p) {
+        return p.x() >= -p.w() && p.x() <= p.w() && p.y() >= -p.w() && p.y() <= p.w() && p.z() >= -p.w() && p.z() <= p.w();
+    };
+
+    vec4f& p0 = vertices[0].position;
+    vec4f& p1 = vertices[1].position;
+    vec4f& p2 = vertices[2].position;
+
+    bool is_p0_visible = is_point_visible(p0);
+    bool is_p1_visible = is_point_visible(p1);
+    bool is_p2_visible = is_point_visible(p2);
+
+    // If all points are visible, draw triangle.
+    if (is_p0_visible && is_p1_visible && is_p2_visible) {
+        fill_triangle(color_buf, depth_buf, vertices, pixel_shader);
+        return;
+    }
+    // If all vertices are outside view, discard triangle.
+    if (!is_p0_visible && !is_p1_visible && !is_p2_visible) {
+        return;
+    }
+
+    // Else clip triangle.
+
+    std::vector<vertex> clipped_vertices = triangle_clip(vertices);
+    assert(clipped_vertices.size() >= 3);
+   
+    for (int i = 1; i < clipped_vertices.size() - 1; i++) {
+        fill_triangle(color_buf, depth_buf, { clipped_vertices[0], clipped_vertices[i], clipped_vertices[i + 1] }, pixel_shader);
     }
 }
 
@@ -256,7 +357,7 @@ bool mesh::load_obj(const std::string& path) {
             normals.push_back(vec3f(std::stof(tokens[1]), std::stof(tokens[2]), std::stof(tokens[3])));
         }
         else if (tokens[0] == "f") {
-            const int index_count = tokens.size() - 1;
+            const int index_count = static_cast<int>(tokens.size()) - 1;
             std::vector<mesh::face::index> indices(index_count);
 
             for (int i = 0; i < index_count; i++) {

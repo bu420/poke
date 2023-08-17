@@ -3,6 +3,20 @@
 #include "vec.hpp"
 
 namespace poke {
+    class mat4;
+
+    class mat3 {
+    public:
+        mat3(float init = 0);
+        mat3(const mat4& m);
+
+        vec3f& operator [] (int x);
+        const vec3f& operator [] (int x) const;
+
+    private:
+        vec3f m[3];
+    };
+
     class mat4 {
     public:
         mat4(float init = 0);

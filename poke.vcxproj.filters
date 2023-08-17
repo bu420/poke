@@ -27,9 +27,6 @@
     <ClInclude Include="vec.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="script\vec.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="util.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>

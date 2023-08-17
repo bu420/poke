@@ -4,6 +4,7 @@
 #include <cassert>
 
 namespace poke {
+    class mat3;
     class mat4;
 
     template <typename T> class vec2 {
@@ -103,6 +104,22 @@ namespace poke {
 
         T dot(const vec3<T>& v) const {
             return x() * v.x() + y() * v.y() + z() * v.z();
+        }
+
+        vec3<T> operator * (const mat3& m) const {
+            vec3<T> result;
+            for (int y = 0; y < 3; y++) {
+                float i = 0;
+                for (int x = 0; x < 3; x++) {
+                    i += m[x][y] * (*this)[x];
+                }
+                result[y] = i;
+            }
+            return result;
+        }
+
+        vec3<T>& operator *= (const mat3& m) {
+            return (*this = *this * m);
         }
 
         vec3<T> operator+(const vec3<T>& v) const { return vec3<T>(x() + v.x(), y() + v.y(), z() + v.z()); }

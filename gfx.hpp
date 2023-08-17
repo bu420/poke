@@ -71,6 +71,7 @@ namespace poke {
 		int attribute_count;
     
         vertex() : attribute_count(0) {}
+		vertex(const vec4f& position) : position(position), attribute_count(0) {}
 
         template <typename... T> vertex(const vec4f& position, T... attributes) : 
             position(position), attributes{ attributes... }, attribute_count(sizeof...(T)) {
@@ -79,11 +80,13 @@ namespace poke {
 		vertex lerp(const vertex& other, float amount) const;
 	};
     
+	using pixel_shader_callback = std::function<std::optional<byte3>(const vertex&)>;
+
     void render_triangle(
         optional_reference<color_buffer> color_buf,
         optional_reference<depth_buffer> depth_buf,
         std::array<vertex, 3> vertices,
-        std::function<byte3(const vertex&)> pixel_shader_callback);
+		pixel_shader_callback pixel_shader);
 
 	struct mesh {
 		struct face {

@@ -16,7 +16,7 @@ int main() {
 
     po::mesh mesh;
     std::cout << "Loading assets..." << std::endl;
-    if (!mesh.load_obj("assets/bullfrog.obj")) {
+    if (!mesh.load_obj("assets/ship/untitled.obj")) {
         std::cout << "Failed to load assets." << std::endl;
         return -1;
     }
@@ -30,25 +30,25 @@ int main() {
     const po::mat4 projection = po::perspective(
         H / static_cast<float>(W), 
         70 * (static_cast<float>(std::numbers::pi) / 180), 
-        .1f, 
+        0.0001f, 
         1000.f);
 
-    const po::vec3f camera_pos(20.f, 20.f, 20.f);
+    const po::vec3f camera_pos(0.f, 0.f, -40.f);
     const po::mat4 view = po::look_at(camera_pos, { 0.f, 0.f, 0.f }, { 0.f, -1.f, 0.f });
 
     while (!win.get_should_close()) {
         win.poll_events();
 
-        color_buf.clear(po::byte3{ 255, 255, 255 });
-        depth_buf.clear(1);
+        color_buf.clear({ 255, 255, 255 });
+        depth_buf.clear(1.0f);
 
-        // Model matrix with a rotation animation.
         po::mat4 model(1);
-        model = model.rotate_x(90.f * (std::numbers::pi / 180));
+        //model = model.rotate_x(static_cast<float>(90.f * (std::numbers::pi / 180)));
         model = model.rotate_y(static_cast<float>(po::get_elapsed_time() * std::numbers::pi / 2000));
-        model = model.rotate_z(static_cast<float>(po::get_elapsed_time() * std::numbers::pi / 4000));
+        //model = model.rotate_z(static_cast<float>(po::get_elapsed_time() * std::numbers::pi / 4000));
 
         po::mat4 mvp = model * view * projection;
+        po::mat3 normal_matrix = model.inverse().transpose();
 
         // Make a copy that we can mutate.
         std::vector<po::vec4f> positions(mesh.positions.size());
@@ -66,10 +66,16 @@ int main() {
 
         // Render mesh.
         for (const auto& face : mesh.faces) {
+            std::array<po::vec3f, 3> normals = {
+                mesh.normals[face.indices[0].normal] * normal_matrix,
+                mesh.normals[face.indices[1].normal] * normal_matrix,
+                mesh.normals[face.indices[2].normal] * normal_matrix
+            };
+
             std::array<po::vertex, 3> vertices = {
-                po::vertex(positions[face.indices[0].pos], po::attribute(mesh.normals[face.indices[0].normal])),
-                po::vertex(positions[face.indices[1].pos], po::attribute(mesh.normals[face.indices[1].normal])),
-                po::vertex(positions[face.indices[2].pos], po::attribute(mesh.normals[face.indices[2].normal]))
+                po::vertex(positions[face.indices[0].pos], po::attribute(normals[0])),
+                po::vertex(positions[face.indices[1].pos], po::attribute(normals[1])),
+                po::vertex(positions[face.indices[2].pos], po::attribute(normals[2]))
             };
 
             po::render_triangle(color_buf, depth_buf, vertices,
