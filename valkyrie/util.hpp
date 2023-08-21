@@ -5,7 +5,7 @@
 #include <functional>
 #include <optional>
 
-namespace poke {
+namespace vlk {
     template<typename T> using optional_reference =
         std::optional<std::reference_wrapper<T>>;
 

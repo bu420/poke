@@ -2,7 +2,7 @@
 
 #include "vec.hpp"
 
-namespace poke {
+namespace vlk {
     class mat4;
 
     class mat3 {

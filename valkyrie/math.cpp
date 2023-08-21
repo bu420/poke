@@ -2,7 +2,7 @@
 
 #include <cmath>
 
-using namespace poke;
+using namespace vlk;
 
 mat3::mat3(float init) {
     for (int col = 0; col < 3; col++) {
@@ -202,7 +202,7 @@ vec4f mat4::operator * (const vec4f& v) const {
     return result;
 }
 
-mat4 poke::look_at(vec3f pos, vec3f target, vec3f up) {
+mat4 vlk::look_at(vec3f pos, vec3f target, vec3f up) {
     vec3f diff = (target - pos);
     vec3f forward = diff.normalize();
     vec3f right = forward.cross(up).normalize();
@@ -224,7 +224,7 @@ mat4 poke::look_at(vec3f pos, vec3f target, vec3f up) {
     return m;
 }
 
-mat4 poke::perspective(float aspect, float fov, float near, float far) {
+mat4 vlk::perspective(float aspect, float fov, float near, float far) {
     mat4 m;
 
     float half_tan = std::tan(fov / 2);

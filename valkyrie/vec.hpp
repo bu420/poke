@@ -3,7 +3,7 @@
 #include <cmath>
 #include <cassert>
 
-namespace poke {
+namespace vlk {
     class mat3;
     class mat4;
 

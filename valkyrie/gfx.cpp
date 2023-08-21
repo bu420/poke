@@ -5,7 +5,7 @@
 #include <streambuf>
 #include <ranges>
 
-using namespace poke;
+using namespace vlk;
 
 struct line3d {
     vertex start;
@@ -294,7 +294,7 @@ std::vector<vertex> triangle_clip(const std::array<vertex, 3>& vertices) {
     return result;
 }
 
-void poke::render_triangle(
+void vlk::render_triangle(
     optional_reference<color_buffer> color_buf,
     optional_reference<depth_buffer> depth_buf,
     std::array<vertex, 3> vertices,

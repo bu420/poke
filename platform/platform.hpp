@@ -1,17 +1,18 @@
 #pragma once
 
-#if !(defined(_WIN32) || defined(_WIN64))
-#error "Unsupported system. Only Windows is supported."
+#if defined(_WIN32) || defined(_WIN64)
+#include <Windows.h>
+#else
+#error "Unsupported system."
 #endif
 
-#include <windows.h>
 #include <string>
 #include <vector>
 #include <cstdint>
 
-#include "gfx.hpp"
+#include <valkyrie/gfx.hpp>
 
-namespace poke {
+namespace vlk {
     void initialize();
     void terminate();
 

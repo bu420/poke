@@ -4,11 +4,11 @@
 
 #define KOMVUX_WINDOW_CLASS_NAME L"PWA Window Class"
 
-using namespace poke;
+using namespace vlk;
 
 LRESULT CALLBACK win_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param);
 
-void poke::initialize() {
+void vlk::initialize() {
     WNDCLASS wc = { 0 };
     wc.lpfnWndProc = win_proc;
     wc.hInstance = GetModuleHandle(0);
@@ -18,16 +18,16 @@ void poke::initialize() {
     RegisterClass(&wc);
 }
 
-void poke::terminate() {
+void vlk::terminate() {
 }
 
-double poke::get_elapsed_time() {
+double vlk::get_elapsed_time() {
     LARGE_INTEGER elapsed;
     QueryPerformanceCounter(&elapsed);
     return (double)(elapsed.QuadPart * 1000000 / get_ticks_per_sec()) / 1000;
 }
 
-int64_t poke::get_ticks_per_sec() {
+int64_t vlk::get_ticks_per_sec() {
     LARGE_INTEGER ticks_per_second;
     QueryPerformanceFrequency(&ticks_per_second);
     return ticks_per_second.QuadPart;

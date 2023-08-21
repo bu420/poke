@@ -9,7 +9,7 @@
 #include "math.hpp"
 #include "util.hpp"
 
-namespace poke {
+namespace vlk {
 	struct byte3 {
 		unsigned char x, y, z;
 	};
