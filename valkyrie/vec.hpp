@@ -30,6 +30,10 @@ namespace vlk {
             return arr[i];
         }
 
+        bool operator == (const vec2<T>& v) const {
+            return x() == v.x() && y() == v.y();
+        }
+
         vec2<T> operator+(const vec2<T>& v) const { return vec2<T>(x() + v.x(), y() + v.y()); }
         vec2<T> operator+(T scalar) const { return vec2<T>(x() + scalar, y() + scalar); }
         vec2<T>& operator+=(const vec2<T>& v) { x() += v.x(); y() += v.y(); return *this; }
@@ -104,6 +108,10 @@ namespace vlk {
 
         T dot(const vec3<T>& v) const {
             return x() * v.x() + y() * v.y() + z() * v.z();
+        }
+
+        bool operator == (const vec3<T>& v) const {
+            return x() == v.x() && y() == v.y() && z() == v.z();
         }
 
         vec3<T> operator * (const mat3& m) const {
@@ -208,6 +216,10 @@ namespace vlk {
         T operator [] (int i) const {
             assert(i >= 0 && i < 4 && "Index outside bounds.");
             return arr[i];
+        }
+
+        bool operator == (const vec4<T>& v) const {
+            return x() == v.x() && y() == v.y() && z() == v.z() && w() == v.w();
         }
 
         vec4<T> operator * (const mat4& m) const {
