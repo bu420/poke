@@ -13,13 +13,19 @@ namespace vlk {
 
     public:
         template <typename... Init> vec2(Init... init) :
-            arr{ init... } {}
+            arr{init...} {
+        }
+
+        T* begin() { return &arr[0]; }
+        const T* begin() const { return &arr[0]; }
+        T* end() { return &arr[1]; }
+        const T* end() const { return &arr[1]; }
 
         vec2<T> normalize() const {
             return *this / length();
         }
         T length() const {
-            return std::sqrt(x()*x() + y()*y());
+            return std::sqrt(x() * x() + y() * y());
         }
         T& operator [] (int i) {
             assert(i >= 0 && i < 2 && "Index outside bounds.");
@@ -71,9 +77,8 @@ namespace vlk {
         vec2<T> vu() const { return vec2<T>(v(), u()); }
     };
 
-    using vec2f = vec2<float>;
-    using vec2d = vec2<double>;
-    using vec2i = vec2<int>;
+    using vec2f = vec2<f32>;
+    using vec2i = vec2<i32>;
 
     template <typename T> class vec3 {
     private:
@@ -81,13 +86,19 @@ namespace vlk {
 
     public:
         template <typename... Init> vec3(Init... init) :
-            arr{ init... } {}
+            arr{init...} {
+        }
+
+        T* begin() { return &arr[0]; }
+        const T* begin() const { return &arr[0]; }
+        T* end() { return &arr[2]; }
+        const T* end() const { return &arr[2]; }
 
         vec3<T> normalize() const {
             return *this / length();
         }
         T length() const {
-            return std::sqrt(x()*x() + y()*y() + z()*z());
+            return std::sqrt(x() * x() + y() * y() + z() * z());
         }
         T& operator [] (int i) {
             assert(i >= 0 && i < 3 && "Index outside bounds.");
@@ -191,9 +202,8 @@ namespace vlk {
         vec3<T> wvu() const { return vec3<T>(w(), v(), u()); }
     };
 
-    using vec3f = vec3<float>;
-    using vec3d = vec3<double>;
-    using vec3i = vec3<int>;
+    using vec3f = vec3<f32>;
+    using vec3i = vec3<i32>;
 
     template <typename T> class vec4 {
     private:
@@ -201,13 +211,19 @@ namespace vlk {
 
     public:
         template <typename... Init> vec4(Init... init) :
-            arr{ init... } {}
+            arr{init...} {
+        }
+
+        T* begin() { return &arr[0]; }
+        const T* begin() const { return &arr[0]; }
+        T* end() { return &arr[3]; }
+        const T* end() const { return &arr[3]; }
 
         vec4<T> normalize() const {
             return *this / length();
         }
         T length() const {
-            return std::sqrt(x()*x() + y()*y() + z()*z() + w()*w());
+            return std::sqrt(x() * x() + y() * y() + z() * z() + w() * w());
         }
         T& operator [] (int i) {
             assert(i >= 0 && i < 4 && "Index outside bounds.");
@@ -337,7 +353,6 @@ namespace vlk {
         vec4<T> abgr() const { return vec4<T>(a(), b(), g(), r()); }
     };
 
-    using vec4f = vec4<float>;
-    using vec4d = vec4<double>;
-    using vec4i = vec4<int>;
+    using vec4f = vec4<f32>;
+    using vec4i = vec4<i32>;
 }

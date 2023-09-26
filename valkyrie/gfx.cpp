@@ -12,20 +12,22 @@ struct line3d {
     vertex end;
 };
 
-enum class line_type {
-    any,
-    vertical,
-    horizontal
-};
-
 struct line3d_stepper {
+    enum class calc_steps_based_on {
+        largest_difference,
+        x_difference,
+        y_difference
+    };
+
     vertex current;
     vertex increment;
 
-    int steps;
-    int i;
+    i32 steps;
+    i32 i;
 
-    line3d_stepper(line3d line, line_type type) : steps(0), i(0) {
+    line3d_stepper(line3d line, calc_steps_based_on line_type) : i{0} {
+        assert(line.start.attribute_count == line.end.attribute_count);
+
         // Round X and Y to nearest integer (pixel position).
         line.start.position.x() = std::round(line.start.position.x());
         line.start.position.y() = std::round(line.start.position.y());
@@ -34,37 +36,39 @@ struct line3d_stepper {
 
         current = line.start;
 
-        vec4f difference(line.end.position - line.start.position);
+        vec4f difference{line.end.position - line.start.position};
 
         // Calculate steps (total number of increments).
-        switch (type) {
-        case line_type::any:
-            steps = static_cast<int>(std::max(std::abs(difference.x()), std::abs(difference.y())));
+        switch (line_type) {
+        case calc_steps_based_on::largest_difference:
+            steps = static_cast<i32>(std::max(std::abs(difference.x()), std::abs(difference.y())));
             break;
 
-        case line_type::vertical:
-            steps = static_cast<int>(std::abs(difference.y()));
+        case calc_steps_based_on::x_difference:
+            steps = static_cast<i32>(std::abs(difference.x()));
             break;
 
-        case line_type::horizontal:
-            steps = static_cast<int>(std::abs(difference.x()));
+        case calc_steps_based_on::y_difference:
+            steps = static_cast<i32>(std::abs(difference.y()));
+            break;
+        }
+
+        if (steps == 0) {
+            return;
         }
 
         // Calculate how much to increment each step.
-        if (steps > 0) {
-            increment.position = difference / static_cast<float>(steps);
-            increment.attribute_count = current.attribute_count;
 
-            assert(line.start.attribute_count == line.end.attribute_count);
+        increment.position = difference / static_cast<f32>(steps);
+        increment.attribute_count = current.attribute_count;
 
-            for (int i = 0; i < line.start.attribute_count; i++) {
-                assert(line.start.attributes[i].count == line.end.attributes[i].count);
+        for (u8 i{0}; i < line.start.attribute_count; ++i) {
+            assert(line.start.attributes[i].count == line.end.attributes[i].count);
+            increment.attributes[i].size = line.start.attributes[i].size;
 
-                for (int j = 0; j < line.start.attributes[i].count; j++) {
-                    increment.attributes[i].data[j] =
-                        (line.end.attributes[i].data[j] - line.start.attributes[i].data[j]) / steps;
-                }
-                increment.attributes[i].count = line.start.attributes[i].count;
+            for (u8 j{0}; j < line.start.attributes[i].size; ++j) {
+                increment.attributes[i].data[j] =
+                    (line.end.attributes[i].data[j] - line.start.attributes[i].data[j]) / steps;
             }
         }
     }
@@ -80,7 +84,7 @@ struct line3d_stepper {
         current.position += increment.position;
 
         // Increment attributes.
-        for (int j = 0; j < current.attribute_count; j++) {
+        for (u8 j{0}; j < current.attribute_count; ++j) {
             current.attributes[j] += increment.attributes[j];
         }
 
@@ -88,44 +92,53 @@ struct line3d_stepper {
     }
 };
 
-attribute attribute::lerp(const attribute& other, float amount) const {
-    assert(this->count == other.count && "Attribute sizes must match.");
+attribute attribute::lerp(const attribute& other, f32 amount) const {
+    assert(this->size == other.size);
 
     attribute result;
-    for (int i = 0; i < this->count; i++) {
-        result.data[i] = std::lerp(this->data[i], other.data[i], amount);
+    result.size = size;
+
+    for (u8 i{0}; i < size; ++i) {
+        result.data[i] = std::lerp(data[i], other.data[i], amount);
     }
-    result.count = this->count;
 
     return result;
 }
 
-vertex vertex::lerp(const vertex& other, float amount) const {
-    assert(this->attribute_count == other.attribute_count && "Number of attributes must match.");
+void attribute::operator += (const attribute& a) {
+    assert(size == a.size);
+
+    for (u8 i{0}; i < size; ++i) {
+        data[i] += a.data[i];
+    }
+}
+
+vertex vertex::lerp(const vertex& other, f32 amount) const {
+    assert(attribute_count == other.attribute_count);
 
     vertex result;
+    result.attribute_count = attribute_count;
 
     // Interpolate position.
-    for (int i = 0; i < 4; i++) {
+    for (u8 i{0}; i < 4; ++i) {
         result.position[i] = std::lerp(this->position[i], other.position[i], amount);
     }
 
     // Interpolate attributes.
-    for (int i = 0; i < this->attribute_count; i++) {
+    for (u8 i{0}; i < this->attribute_count; ++i) {
         result.attributes[i] = this->attributes[i].lerp(other.attributes[i], amount);
     }
-    result.attribute_count = this->attribute_count;
 
     return result;
 }
 
 // This function assumes that the entire triangle is visible.
-void fill_triangle(
-    optional_reference<color_buffer> color_buf,
-    optional_reference<depth_buffer> depth_buf,
-    std::array<vertex, 3> vertices,
-    pixel_shader_callback pixel_shader) {
-    assert(color_buf.has_value() || depth_buf.has_value() && "Either a color buffer, depth buffer or both must be present.");
+void fill_triangle(optional_reference<color_buffer> color_buf,
+                   optional_reference<depth_buffer> depth_buf,
+                   std::array<vertex, 3> vertices,
+                   pixel_shader_callback pixel_shader) {
+    assert(color_buf.has_value() || depth_buf.has_value() &&
+           "Either a color buffer, depth buffer or both must be present.");
 
     // W division (homogeneous clip space -> NDC space).
     for (auto& vertex : vertices) {
@@ -138,10 +151,9 @@ void fill_triangle(
         pos.z() /= pos.w();
     }
 
-    const vec2i framebuffer_size(
-        color_buf.has_value() ?
-        vec2i(color_buf.value().get().get_width(), color_buf.value().get().get_height()) :
-        vec2i(depth_buf.value().get().get_width(), depth_buf.value().get().get_height()));
+    const vec2i framebuffer_size(color_buf.has_value() ?
+                                 vec2i(color_buf.value().get().get_width(), color_buf.value().get().get_height()) :
+                                 vec2i(depth_buf.value().get().get_width(), depth_buf.value().get().get_height()));
 
     // Viewport transformation. 
     // Convert [-1, 1] to framebuffer size.
@@ -175,26 +187,23 @@ void fill_triangle(
             std::swap(a, b);
         }
 
-        line3d_stepper line_a(a, line_type::vertical);
-        line3d_stepper line_b(b, line_type::vertical);
+        line3d_stepper line_a(a, line3d_stepper::calc_steps_based_on::y_difference);
+        line3d_stepper line_b(b, line3d_stepper::calc_steps_based_on::y_difference);
 
         do {
             assert(line_a.current.position.y() == line_b.current.position.y() && "Big failure.");
 
-            line3d_stepper line_x(line3d{ line_a.current, line_b.current }, line_type::horizontal);
+            line3d_stepper line_x(line3d{line_a.current, line_b.current}, line3d_stepper::calc_steps_based_on::x_difference);
 
             do {
-                int x = static_cast<int>(line_x.current.position.x());
-                int y = static_cast<int>(line_x.current.position.y());
+                i32 x = static_cast<i32>(line_x.current.position.x());
+                i32 y = static_cast<i32>(line_x.current.position.y());
 
                 if (depth_buf.has_value()) {
-                    if (!(x >= 0 && x < depth_buf.value().get().get_width() &&
-                        y >= 0 && y < depth_buf.value().get().get_height()))
-                        continue;
                     assert(x >= 0 && x < depth_buf.value().get().get_width() &&
-                        y >= 0 && y < depth_buf.value().get().get_height());
+                           y >= 0 && y < depth_buf.value().get().get_height());
 
-                    float z = line_x.current.position.z();
+                    f32 z = line_x.current.position.z();
 
                     if (z < depth_buf.value().get().at(x, y)) {
                         depth_buf.value().get().at(x, y) = z;
@@ -207,7 +216,7 @@ void fill_triangle(
 
                 if (color_buf.has_value()) {
                     assert(x >= 0 && x < color_buf.value().get().get_width() &&
-                        y >= 0 && y < color_buf.value().get().get_height());
+                           y >= 0 && y < color_buf.value().get().get_height());
 
                     std::optional<byte3> color = pixel_shader(line_x.current);
 
@@ -215,17 +224,19 @@ void fill_triangle(
                         color_buf.value().get().at(x, y) = color.value();
                     }
                 }
-            } while (line_x.step());
-        } while (line_a.step() && line_b.step());
+            }
+            while (line_x.step());
+        }
+        while (line_a.step() && line_b.step());
     };
 
     // Check if the top of the triangle is flat.
     if (p0.y() == p1.y()) {
-        render_triangle_from_lines(line3d{ vertices[0], vertices[2] }, line3d{ vertices[1], vertices[2] });
+        render_triangle_from_lines(line3d{vertices[0], vertices[2]}, line3d{vertices[1], vertices[2]});
     }
     // Check if the bottom is flat.
     else if (p1.y() == p2.y()) {
-        render_triangle_from_lines(line3d{ vertices[0], vertices[1] }, line3d{ vertices[0], vertices[2] });
+        render_triangle_from_lines(line3d{vertices[0], vertices[1]}, line3d{vertices[0], vertices[2]});
     }
     // Else split into two smaller triangles.
     else {
@@ -233,24 +244,24 @@ void fill_triangle(
         vertex vertex3 = vertices[0].lerp(vertices[2], lerp_amount);
 
         // Top (flat bottom).
-        render_triangle_from_lines(line3d{ vertices[0], vertices[1] }, line3d{ vertices[0], vertex3 });
+        render_triangle_from_lines(line3d{vertices[0], vertices[1]}, line3d{vertices[0], vertex3});
 
         // Bottom (flat top).
-        render_triangle_from_lines(line3d{ vertices[1], vertices[2] }, line3d{ vertex3, vertices[2] });
+        render_triangle_from_lines(line3d{vertices[1], vertices[2]}, line3d{vertex3, vertices[2]});
     }
 }
 
-std::vector<vertex> triangle_clip_component(const std::vector<vertex>& vertices, int component_idx) {    
+std::vector<vertex> triangle_clip_component(const std::vector<vertex>& vertices, int component_idx) {
     auto clip = [&](const std::vector<vertex>& vertices, float sign) {
         std::vector<vertex> result;
         result.reserve(vertices.size());
 
-        for (int i = 0; i < vertices.size(); i++) {
+        for (std::size_t i{0}; i < vertices.size(); ++i) {
             const vertex& curr_vertex = vertices[i];
             const vertex& prev_vertex = vertices[(i - 1 + vertices.size()) % vertices.size()];
 
-            float curr_component = sign * curr_vertex.position[component_idx];
-            float prev_component = sign * prev_vertex.position[component_idx];
+            f32 curr_component = sign * curr_vertex.position[component_idx];
+            f32 prev_component = sign * prev_vertex.position[component_idx];
 
             bool curr_is_inside = curr_component <= curr_vertex.position.w();
             bool prev_is_inside = prev_component <= prev_vertex.position.w();
@@ -280,7 +291,7 @@ std::vector<vertex> triangle_clip_component(const std::vector<vertex>& vertices,
 
 std::vector<vertex> triangle_clip(const std::array<vertex, 3>& vertices) {
     // Clip X.
-    std::vector<vertex> result = triangle_clip_component({ vertices.begin(), vertices.end() }, 0);
+    std::vector<vertex> result = triangle_clip_component({vertices.begin(), vertices.end()}, 0);
     if (result.empty()) {
         return result;
     }
@@ -294,15 +305,15 @@ std::vector<vertex> triangle_clip(const std::array<vertex, 3>& vertices) {
     return result;
 }
 
-void vlk::render_triangle(
-    optional_reference<color_buffer> color_buf,
-    optional_reference<depth_buffer> depth_buf,
-    std::array<vertex, 3> vertices,
-    pixel_shader_callback pixel_shader) {
+void vlk::render_triangle(optional_reference<color_buffer> color_buf,
+                          optional_reference<depth_buffer> depth_buf,
+                          std::array<vertex, 3> vertices,
+                          pixel_shader_callback pixel_shader) {
     auto is_point_visible = [](const vec4f& p) {
         return p.x() >= -p.w() && p.x() <= p.w() && p.y() >= -p.w() && p.y() <= p.w() && p.z() >= -p.w() && p.z() <= p.w();
     };
 
+    // Position aliases.
     vec4f& p0 = vertices[0].position;
     vec4f& p1 = vertices[1].position;
     vec4f& p2 = vertices[2].position;
@@ -316,7 +327,7 @@ void vlk::render_triangle(
         fill_triangle(color_buf, depth_buf, vertices, pixel_shader);
         return;
     }
-    // If all vertices are outside view, discard triangle.
+    // If no vertices are visible, discard triangle.
     if (!is_p0_visible && !is_p1_visible && !is_p2_visible) {
         return;
     }
@@ -325,63 +336,125 @@ void vlk::render_triangle(
 
     std::vector<vertex> clipped_vertices = triangle_clip(vertices);
     assert(clipped_vertices.size() >= 3);
-   
-    for (int i = 1; i < clipped_vertices.size() - 1; i++) {
-        fill_triangle(color_buf, depth_buf, { clipped_vertices[0], clipped_vertices[i], clipped_vertices[i + 1] }, pixel_shader);
+
+    for (std::size_t i{1}; i < clipped_vertices.size() - 1; ++i) {
+        fill_triangle(color_buf, depth_buf, {clipped_vertices[0], clipped_vertices[i], clipped_vertices[i + 1]}, pixel_shader);
     }
 }
 
-bool mesh::load_obj(const std::string& path) {
-    std::ifstream file(path);
+std::optional<model> vmod_parser::parse(const std::vector<std::byte>& buf) {
+    model vmod;
+    vmod.meshes.resize(1);
+
+    // Skip the first 16 bytes (it's the unused header).
+    std::size_t byte_pos{16};
+
+    // Parse positions.
+
+    vmod.meshes[0].positions.resize(get_next_int(buf, byte_pos));
+
+    for (auto& position : vmod.meshes[0].positions) {
+        for (auto& attribute : position) {
+            attribute = get_next_float(buf, byte_pos);
+        }
+    }
+
+    // Parse texture coordinates.
+
+    vmod.meshes[0].tex_coords.resize(get_next_int(buf, byte_pos));
+
+    for (auto& tex_coord : vmod.meshes[0].tex_coords) {
+        for (auto& attribute : tex_coord) {
+            attribute = get_next_float(buf, byte_pos);
+        }
+    }
+
+    // Parse normals.
+
+    vmod.meshes[0].normals.resize(get_next_int(buf, byte_pos));
+
+    for (auto& normal : vmod.meshes[0].normals) {
+        for (auto& attribute : normal) {
+            attribute = get_next_float(buf, byte_pos);
+        }
+    }
+
+    // Parse images.
+
+    vmod.images.resize(get_next_int(buf, byte_pos));
+
+    for (auto& image : vmod.images) {
+
+    }
+
+    // Parse faces.
+
+    vmod.meshes[0].faces.resize(get_next_int(buf, byte_pos));
+
+    for (auto& face : vmod.meshes[0].faces) {
+
+    }
+}
+
+std::optional<model> vmod_parser::parse(const std::string& path) {
+    std::ifstream file(path, std::ios_base::binary);
 
     if (!file.is_open()) {
-        return false;
+        return std::nullopt;
     }
 
-    std::string file_content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-
-    for (const auto& line : string_split(file_content, "\n")) {
-        const auto& tokens = string_split(line, " ");
-
-        if (tokens.size() == 0) {
-            continue;
-        }
-
-        if (tokens[0] == "v") {
-            positions.push_back(vec3f(std::stof(tokens[1]), std::stof(tokens[2]), std::stof(tokens[3])));
-        }
-        else if (tokens[0] == "vt") {
-            tex_coords.push_back(vec2f(std::stof(tokens[1]), std::stof(tokens[2])));
-        }
-        else if (tokens[0] == "vn") {
-            normals.push_back(vec3f(std::stof(tokens[1]), std::stof(tokens[2]), std::stof(tokens[3])));
-        }
-        else if (tokens[0] == "f") {
-            const int index_count = static_cast<int>(tokens.size()) - 1;
-            std::vector<mesh::face::index> indices(index_count);
-
-            for (int i = 0; i < index_count; i++) {
-                const auto& face_tokens = string_split(tokens[1 + i], "/");
-                
-                // Remove 1 from each index to convert them from 1-based to 0-based.
-                indices[i].pos = std::stoi(face_tokens[0]) - 1;
-                indices[i].tex_coord = std::stoi(face_tokens[1]) - 1;
-                indices[i].normal = std::stoi(face_tokens[2]) - 1;
-            }
-
-            const int face_count = index_count - 2;
-
-            for (int i = 0; i < face_count; i++) {
-                mesh::face face;
-                face.indices[0] = indices[(i * 2 + 0) % index_count];
-                face.indices[1] = indices[(i * 2 + 1) % index_count];
-                face.indices[2] = indices[(i * 2 + 2) % index_count];
-
-                faces.push_back(face);
-            }
-        }
-    }
+    const std::vector<std::byte> buf((std::istreambuf_iterator<char>(file)),
+                                     std::istreambuf_iterator<char>());
 
     file.close();
-    return true;
+
+    if (buf.empty()) {
+        return std::nullopt;
+    }
+
+    return vmod_parser::parse(buf);
+}
+
+i32 vmod_parser::get_next_int(const std::vector<std::byte>& buf, 
+                              std::size_t& byte_pos) {
+    i32 result{0};
+
+    for (std::size_t i{0}; i < 4; ++i) {
+        std::byte byte = buf.at(byte_pos + i);
+        byte_pos++;
+
+        // Byte 1-3 have a special bit flag at the end. Handle the 4th byte differently.
+        if (i < 3) {
+            // The last bit signals whether to read the next byte or to stop after this one.
+            bool is_last_bit_set = (byte & std::byte{0b10000000}) != std::byte{0b00000000};
+
+            // Discard last bit.
+            byte &= std::byte{0b01111111};
+
+            // Add the 7 bits to the result (last bit is used as a flag, see above).
+            result |= (static_cast<i32>(byte) << (i * 7));
+
+            if (!is_last_bit_set) {
+                break;
+            }
+        }
+        else {
+            result |= (static_cast<i32>(byte) << (i * 7));
+        }
+    }
+
+    return result;
+}
+
+f32 vmod_parser::get_next_float(const std::vector<std::byte>& buf, 
+                                std::size_t& byte_pos) {
+    i32 result =
+        static_cast<i32>(buf[byte_pos]) |
+        (static_cast<i32>(buf[byte_pos + 1]) << 8) |
+        (static_cast<i32>(buf[byte_pos + 2]) << 16) |
+        (static_cast<i32>(buf[byte_pos + 3]) << 24);
+
+    byte_pos += 4;
+
+    return std::bit_cast<f32>(result);
 }

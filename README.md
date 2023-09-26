@@ -39,20 +39,22 @@ vlk::render_triangle(color_buf, depth_buf, vertices, pixel_shader);
 ```
 
 ## Custom 3D model format
-The framework uses a custom binary file format (`.vmod`) where 
-everything is baked into one file.
+Valkyrie uses a custom 3d model binary format (`.vmod`) where 
+positions, texture coordinates, normals and textures are baked into a single file.
 Not very memory efficient. Meant for small models.
 Big-endian.
+Integers and floats are both 4 bytes in size.
 
-### File content
-| Bytes  | Type          | Description                                                                                         |
-|--------|---------------|-----------------------------------------------------------------------------------------------------|
-| 16     |               | Header. Unused.                                                                                     |
-| 4      | int           | Position count (P).                                                                                 |
-| 4      | int           | Tex coord count (T).                                                                                |
-| 4      | int           | Normal count (N).                                                                                   |
-| 4      | int           | Face count (F).                                                                                     |
-| P x 12 | P x 3 x float | Position data [X,Y,Z].                                                                              |
-| T x 8  | T x 2 x float | Tex coord data [U,V].                                                                               |
-| N x 12 | N x 3 x float | Normal data [X,Y,Z].                                                                                |
-| F x 12 | F x 3 x int   | Face data. Each face consists of a position index, tex coord index and normal index, in that order. |
+| File content                                                                                                                                                                                                                                                                                     |
+|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Header. 16 bytes. Unused.                                                                                                                                                                                                                                                                        |
+| Position count (int).                                                                                                                                                                                                                                                                            |
+| Positions. Each element consists of 3 floats [x, y, z].                                                                                                                                                                                                                                          |
+| Texture coordinate count (int).                                                                                                                                                                                                                                                                  |
+| Texture coordinates. Each element consists of 2 floats [u, v].                                                                                                                                                                                                                                   |
+| Normal count (int).                                                                                                                                                                                                                                                                              |
+| Normals. Each element consists of 3 floats [x, y, z].                                                                                                                                                                                                                                            |
+| Texture count (int).                                                                                                                                                                                                                                                                             |
+| Textures. Each element consists of 2 ints (width and height), 1 int specifying number of channels and then the pixels. The size of each pixel is determined by the number of channels. Each channel is 1 byte. If number of channels is set to 4, then each pixel would be 4 bytes [r, g, b, a]. |
+| Face count (int).                                                                                                                                                                                                                                                                                |
+| Faces. Each element is 40 bytes. 3 x [position index, texture coord index, normal index] + texture index.                                                                                                                                                                                        |

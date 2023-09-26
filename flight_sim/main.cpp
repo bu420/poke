@@ -12,15 +12,15 @@
 int main() {
     vlk::initialize();
 
-    vlk::mesh mesh;
+    vlk::model model3d;
     std::cout << "Loading assets..." << std::endl;
-    if (!mesh.load_obj("../assets/bullfrog.obj")) {
+    if (!model3d.load("../assets/earth/uv_planet.vmod")) {
         std::cout << "Failed to load assets." << std::endl;
         return -1;
     }
     std::cout << "Done." << std::endl;
 
-    vlk::window win("poke", W, H);
+    vlk::window win("valkyrie", W, H);
 
     vlk::color_buffer color_buf(W, H);
     vlk::depth_buffer depth_buf(W, H);
@@ -50,23 +50,23 @@ int main() {
         vlk::mat3 normal_matrix = model.inverse().transpose();
 
         // Make a copy that we can mutate.
-        std::vector<vlk::vec4f> positions(mesh.positions.size());
-        for (int i = 0; i < mesh.positions.size(); i++) {
-            positions[i].x() = mesh.positions[i].x();
-            positions[i].y() = mesh.positions[i].y();
-            positions[i].z() = mesh.positions[i].z();
+        std::vector<vlk::vec4f> positions(model3d.meshes[0].positions.size());
+        for (int i = 0; i < model3d.meshes[0].positions.size(); i++) {
+            positions[i].x() = model3d.meshes[0].positions[i].x();
+            positions[i].y() = model3d.meshes[0].positions[i].y();
+            positions[i].z() = model3d.meshes[0].positions[i].z();
             positions[i].w() = 1.f;
         }
 
-        std::vector<bool> should_cull(mesh.faces.size());
+        std::vector<bool> should_cull(model3d.meshes[0].faces.size());
 
         // Backface culling.
-        for (int i = 0; i < mesh.faces.size(); i++) {
+        for (int i = 0; i < model3d.meshes[0].faces.size(); i++) {
             // Pick any one of the triangle's points, put it in model space and check if the triangle should be culled.
-            vlk::vec4f any_point_on_triangle = positions[mesh.faces[i].indices[0].pos] * model;
+            vlk::vec4f any_point_on_triangle = positions[model3d.meshes[0].faces[i].indices[0].pos] * model;
 
             vlk::vec3f dir = (any_point_on_triangle.xyz() - camera_pos).normalize();
-            vlk::vec3f normal = mesh.normals[mesh.faces[i].indices[0].normal] * normal_matrix;
+            vlk::vec3f normal = model3d.meshes[0].normals[model3d.meshes[0].faces[i].indices[0].normal] * normal_matrix;
 
             should_cull[i] = dir.dot(normal) >= 0;
         }
@@ -77,17 +77,17 @@ int main() {
         }
 
         // Render mesh.
-        for (int i = 0; i < mesh.faces.size(); i++) {
+        for (int i = 0; i < model3d.meshes[0].faces.size(); i++) {
             /*if (should_cull[i]) {
                 continue;
             }*/
 
-            const auto& face = mesh.faces[i];
+            const auto& face = model3d.meshes[0].faces[i];
 
             std::array<vlk::vec3f, 3> normals = {
-                mesh.normals[face.indices[0].normal] * normal_matrix,
-                mesh.normals[face.indices[1].normal] * normal_matrix,
-                mesh.normals[face.indices[2].normal] * normal_matrix
+                model3d.meshes[0].normals[face.indices[0].normal] * normal_matrix,
+                model3d.meshes[0].normals[face.indices[1].normal] * normal_matrix,
+                model3d.meshes[0].normals[face.indices[2].normal] * normal_matrix
             };
 
             std::array<vlk::vertex, 3> vertices = {
@@ -104,9 +104,9 @@ int main() {
                     vlk::vec3f color((normal + 1.f) * 127.f);
 
                     return {
-                        static_cast<unsigned char>(color.x()),
-                        static_cast<unsigned char>(color.y()),
-                        static_cast<unsigned char>(color.z())
+                        static_cast<vlk::byte>(color.x()),
+                        static_cast<vlk::byte>(color.y()),
+                        static_cast<vlk::byte>(color.z())
                     };
                 });
         }

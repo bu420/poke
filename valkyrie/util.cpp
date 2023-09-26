@@ -4,7 +4,8 @@
 
 using namespace vlk;
 
-std::vector<std::string> vlk::string_split(const std::string& source, const std::string& separator) {
+std::vector<std::string> vlk::string_split(const std::string& source, 
+                                           const std::string& separator) {
     std::vector<std::string> tokens;
 
     auto pos = source.begin();
@@ -25,10 +26,9 @@ std::vector<std::string> vlk::string_split(const std::string& source, const std:
     return tokens;
 }
 
-void vlk::string_get_next_token(
-    const std::string& source, 
-    const std::string& separator, 
-    std::function<bool(const std::string& token)> callback) {
+void vlk::string_split(const std::string& source,
+                       const std::string& separator,
+                       std::function<bool(const std::string& token)> callback) {
     auto pos = source.begin();
     auto end = source.end();
 
