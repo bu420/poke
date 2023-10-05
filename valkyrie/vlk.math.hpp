@@ -1,17 +1,17 @@
 #pragma once
 
-#include "vec.hpp"
+#include "vlk.vec.hpp"
 
 namespace vlk {
     class mat4;
 
     class mat3 {
     public:
-        mat3(float init = 0);
+        mat3(f32 init = 0);
         mat3(const mat4& m);
 
-        vec3f& operator [] (int x);
-        const vec3f& operator [] (int x) const;
+        vec3f& operator [] (u8 x);
+        const vec3f& operator [] (u8 x) const;
 
     private:
         vec3f m[3];
@@ -19,19 +19,19 @@ namespace vlk {
 
     class mat4 {
     public:
-        mat4(float init = 0);
+        mat4(f32 init = 0);
 
         mat4 translate(const vec3f& delta_pos) const;
-        mat4 rotate_x(float angle) const;
-        mat4 rotate_y(float angle) const;
-        mat4 rotate_z(float angle) const;
+        mat4 rotate_x(f32 angle) const;
+        mat4 rotate_y(f32 angle) const;
+        mat4 rotate_z(f32 angle) const;
         mat4 scale(const vec3f& multiplier) const;
 
         mat4 transpose() const;
         mat4 inverse() const;
 
-        vec4f& operator [] (int x);
-        const vec4f& operator [] (int x) const;
+        vec4f& operator [] (u8 x);
+        const vec4f& operator [] (u8 x) const;
 
         mat4 operator * (const mat4& m) const;
         mat4& operator *= (const mat4& m);
@@ -42,5 +42,5 @@ namespace vlk {
     };
 
     mat4 look_at(vec3f pos, vec3f target, vec3f up);
-    mat4 perspective(float aspect, float fov, float near, float far);
+    mat4 perspective(f32 aspect, f32 fov, f32 near, f32 far);
 }

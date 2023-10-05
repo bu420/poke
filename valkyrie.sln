@@ -5,8 +5,6 @@ VisualStudioVersion = 17.3.32929.385
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "valkyrie", "valkyrie\valkyrie.vcxproj", "{61F8F1CC-226D-42A2-9E33-F69940F88BAC}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "platform", "platform\platform.vcxproj", "{67FE94E3-7033-4067-8B30-90388F00B24C}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "flight_sim", "flight_sim\flight_sim.vcxproj", "{68F284EB-E1EC-4A82-8D47-DF90C6366B92}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C7E8D46B-543B-402D-B0D9-5D1D9E352296}"
@@ -33,14 +31,6 @@ Global
 		{61F8F1CC-226D-42A2-9E33-F69940F88BAC}.Release|x64.Build.0 = Release|x64
 		{61F8F1CC-226D-42A2-9E33-F69940F88BAC}.Release|x86.ActiveCfg = Release|Win32
 		{61F8F1CC-226D-42A2-9E33-F69940F88BAC}.Release|x86.Build.0 = Release|Win32
-		{67FE94E3-7033-4067-8B30-90388F00B24C}.Debug|x64.ActiveCfg = Debug|x64
-		{67FE94E3-7033-4067-8B30-90388F00B24C}.Debug|x64.Build.0 = Debug|x64
-		{67FE94E3-7033-4067-8B30-90388F00B24C}.Debug|x86.ActiveCfg = Debug|Win32
-		{67FE94E3-7033-4067-8B30-90388F00B24C}.Debug|x86.Build.0 = Debug|Win32
-		{67FE94E3-7033-4067-8B30-90388F00B24C}.Release|x64.ActiveCfg = Release|x64
-		{67FE94E3-7033-4067-8B30-90388F00B24C}.Release|x64.Build.0 = Release|x64
-		{67FE94E3-7033-4067-8B30-90388F00B24C}.Release|x86.ActiveCfg = Release|Win32
-		{67FE94E3-7033-4067-8B30-90388F00B24C}.Release|x86.Build.0 = Release|Win32
 		{68F284EB-E1EC-4A82-8D47-DF90C6366B92}.Debug|x64.ActiveCfg = Debug|x64
 		{68F284EB-E1EC-4A82-8D47-DF90C6366B92}.Debug|x64.Build.0 = Debug|x64
 		{68F284EB-E1EC-4A82-8D47-DF90C6366B92}.Debug|x86.ActiveCfg = Debug|Win32

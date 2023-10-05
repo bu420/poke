@@ -78,6 +78,8 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <AdditionalOptions>/w35219 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -93,6 +95,8 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <AdditionalOptions>/w35219 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -108,6 +112,8 @@
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <AdditionalOptions>/w35219 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -123,6 +129,8 @@
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <AdditionalOptions>/w35219 %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,15 +140,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="gfx.cpp" />
-    <ClCompile Include="math.cpp" />
-    <ClCompile Include="util.cpp" />
+    <ClCompile Include="vlk_math.cpp" />
+    <ClCompile Include="vlk_gfx.cpp" />
+    <ClCompile Include="vlk_model.cpp" />
+    <ClCompile Include="vlk_util.cpp" />
+    <ClCompile Include="vlk_platform.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="gfx.hpp" />
-    <ClInclude Include="math.hpp" />
-    <ClInclude Include="util.hpp" />
-    <ClInclude Include="vec.hpp" />
+    <ClInclude Include="vlk_gfx.hpp" />
+    <ClInclude Include="vlk_math.hpp" />
+    <ClInclude Include="vlk_model.hpp" />
+    <ClInclude Include="vlk_util.hpp" />
+    <ClInclude Include="vlk_vec.hpp" />
+    <ClInclude Include="vlk_platform.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

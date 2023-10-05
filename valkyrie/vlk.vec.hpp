@@ -3,16 +3,20 @@
 #include <cmath>
 #include <cassert>
 
+#include "vlk.types.hpp"
+
 namespace vlk {
     class mat3;
     class mat4;
 
-    template <typename T> class vec2 {
+    template <typename T> 
+    class vec2 {
     private:
         T arr[2] = {};
 
     public:
-        template <typename... Init> vec2(Init... init) :
+        template <typename... Init> 
+        vec2(Init... init) :
             arr{init...} {
         }
 
@@ -80,12 +84,14 @@ namespace vlk {
     using vec2f = vec2<f32>;
     using vec2i = vec2<i32>;
 
-    template <typename T> class vec3 {
+    template <typename T> 
+    class vec3 {
     private:
         T arr[3];
 
     public:
-        template <typename... Init> vec3(Init... init) :
+        template <typename... Init> 
+        vec3(Init... init) :
             arr{init...} {
         }
 
@@ -205,12 +211,14 @@ namespace vlk {
     using vec3f = vec3<f32>;
     using vec3i = vec3<i32>;
 
-    template <typename T> class vec4 {
+    template <typename T> 
+    class vec4 {
     private:
         T arr[4] = {};
 
     public:
-        template <typename... Init> vec4(Init... init) :
+        template <typename... Init> 
+        vec4(Init... init) :
             arr{init...} {
         }
 

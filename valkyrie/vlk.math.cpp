@@ -1,43 +1,43 @@
-#include "math.hpp"
+#include "vlk.math.hpp"
 
 #include <cmath>
 
 using namespace vlk;
 
-mat3::mat3(float init) {
-    for (int col = 0; col < 3; col++) {
-        for (int row = 0; row < 3; row++) {
+mat3::mat3(f32 init) {
+    for (u8 col{0}; col < 3; ++col) {
+        for (u8 row{0}; row < 3; ++row) {
             (*this)[col][row] = 0;
         }
     }
-    for (int i = 0; i < 3; i++) {
+    for (u8 i{0}; i < 3; ++i) {
         (*this)[i][i] = init;
     }
 }
 
 mat3::mat3(const mat4& m) {
-    for (int col = 0; col < 3; col++) {
-        for (int row = 0; row < 3; row++) {
+    for (u8 col{0}; col < 3; ++col) {
+        for (u8 row{0}; row < 3; ++row) {
             (*this)[col][row] = m[col][row];
         }
     }
 }
 
-vec3f& mat3::operator [] (int x) {
+vec3f& mat3::operator [] (u8 x) {
     return m[x];
 }
 
-const vec3f& mat3::operator [] (int x) const {
+const vec3f& mat3::operator [] (u8 x) const {
     return m[x];
 }
 
-mat4::mat4(float init) {
-    for (int col = 0; col < 4; col++) {
-        for (int row = 0; row < 4; row++) {
+mat4::mat4(f32 init) {
+    for (u8 col{0}; col < 4; ++col) {
+        for (u8 row{0}; row < 4; ++row) {
             (*this)[col][row] = 0;
         }
     }
-    for (int i = 0; i < 4; i++) {
+    for (u8 i{0}; i < 4; ++i) {
         (*this)[i][i] = init;
     }
 }
@@ -50,9 +50,9 @@ mat4 mat4::translate(const vec3f& delta_pos) const {
     return *this * m;
 }
 
-mat4 mat4::rotate_x(float angle) const {
-    float s = std::sin(angle);
-    float c = std::cos(angle);
+mat4 mat4::rotate_x(f32 angle) const {
+    f32 s = std::sin(angle);
+    f32 c = std::cos(angle);
 
     mat4 x(1);
     x[1][1] = c;
@@ -63,9 +63,9 @@ mat4 mat4::rotate_x(float angle) const {
     return *this * x;
 }
 
-mat4 mat4::rotate_y(float angle) const {
-    float s = std::sin(angle);
-    float c = std::cos(angle);
+mat4 mat4::rotate_y(f32 angle) const {
+    f32 s = std::sin(angle);
+    f32 c = std::cos(angle);
 
     mat4 y(1);
     y[0][0] = c;
@@ -76,9 +76,9 @@ mat4 mat4::rotate_y(float angle) const {
     return *this * y;
 }
 
-mat4 mat4::rotate_z(float angle) const {
-    float s = std::sin(angle);
-    float c = std::cos(angle);
+mat4 mat4::rotate_z(f32 angle) const {
+    f32 s = std::sin(angle);
+    f32 c = std::cos(angle);
 
     mat4 z(1);
 
@@ -102,8 +102,8 @@ mat4 mat4::scale(const vec3f& multiplier) const {
 mat4 mat4::transpose() const {
     mat4 m;
 
-    for (int col = 0; col < 4; col++) {
-        for (int row = 0; row < 4; row++) {
+    for (u8 col{0}; col < 4; col++) {
+        for (u8 row{0}; row < 4; row++) {
             m[col][row] = (*this)[row][col];
         }
     }
@@ -112,33 +112,33 @@ mat4 mat4::transpose() const {
 }
 
 mat4 mat4::inverse() const {
-    float a2323 = m[2][2] * m[3][3] - m[2][3] * m[3][2];
-    float a1323 = m[2][1] * m[3][3] - m[2][3] * m[3][1];
-    float a1223 = m[2][1] * m[3][2] - m[2][2] * m[3][1];
-    float a0323 = m[2][0] * m[3][3] - m[2][3] * m[3][0];
-    float a0223 = m[2][0] * m[3][2] - m[2][2] * m[3][0];
-    float a0123 = m[2][0] * m[3][1] - m[2][1] * m[3][0];
-    float a2313 = m[1][2] * m[3][3] - m[1][3] * m[3][2];
-    float a1313 = m[1][1] * m[3][3] - m[1][3] * m[3][1];
-    float a1213 = m[1][1] * m[3][2] - m[1][2] * m[3][1];
-    float a2312 = m[1][2] * m[2][3] - m[1][3] * m[2][2];
-    float a1312 = m[1][1] * m[2][3] - m[1][3] * m[2][1];
-    float a1212 = m[1][1] * m[2][2] - m[1][2] * m[2][1];
-    float a0313 = m[1][0] * m[3][3] - m[1][3] * m[3][0];
-    float a0213 = m[1][0] * m[3][2] - m[1][2] * m[3][0];
-    float a0312 = m[1][0] * m[2][3] - m[1][3] * m[2][0];
-    float a0212 = m[1][0] * m[2][2] - m[1][2] * m[2][0];
-    float a0113 = m[1][0] * m[3][1] - m[1][1] * m[3][0];
-    float a0112 = m[1][0] * m[2][1] - m[1][1] * m[2][0];
+    f32 a2323{m[2][2] * m[3][3] - m[2][3] * m[3][2]};
+    f32 a1323{m[2][1] * m[3][3] - m[2][3] * m[3][1]};
+    f32 a1223{m[2][1] * m[3][2] - m[2][2] * m[3][1]};
+    f32 a0323{m[2][0] * m[3][3] - m[2][3] * m[3][0]};
+    f32 a0223{m[2][0] * m[3][2] - m[2][2] * m[3][0]};
+    f32 a0123{m[2][0] * m[3][1] - m[2][1] * m[3][0]};
+    f32 a2313{m[1][2] * m[3][3] - m[1][3] * m[3][2]};
+    f32 a1313{m[1][1] * m[3][3] - m[1][3] * m[3][1]};
+    f32 a1213{m[1][1] * m[3][2] - m[1][2] * m[3][1]};
+    f32 a2312{m[1][2] * m[2][3] - m[1][3] * m[2][2]};
+    f32 a1312{m[1][1] * m[2][3] - m[1][3] * m[2][1]};
+    f32 a1212{m[1][1] * m[2][2] - m[1][2] * m[2][1]};
+    f32 a0313{m[1][0] * m[3][3] - m[1][3] * m[3][0]};
+    f32 a0213{m[1][0] * m[3][2] - m[1][2] * m[3][0]};
+    f32 a0312{m[1][0] * m[2][3] - m[1][3] * m[2][0]};
+    f32 a0212{m[1][0] * m[2][2] - m[1][2] * m[2][0]};
+    f32 a0113{m[1][0] * m[3][1] - m[1][1] * m[3][0]};
+    f32 a0112{m[1][0] * m[2][1] - m[1][1] * m[2][0]};
 
-    float det =
-        m[0][0] * (m[1][1] * a2323 - m[1][2] * a1323 + m[1][3] * a1223) -
-        m[0][1] * (m[1][0] * a2323 - m[1][2] * a0323 + m[1][3] * a0223) +
-        m[0][2] * (m[1][0] * a1323 - m[1][1] * a0323 + m[1][3] * a0123) -
-        m[0][3] * (m[1][0] * a1223 - m[1][1] * a0223 + m[1][2] * a0123);
+    f32 det{m[0][0] * (m[1][1] * a2323 - m[1][2] * a1323 + m[1][3] * a1223) -
+            m[0][1] * (m[1][0] * a2323 - m[1][2] * a0323 + m[1][3] * a0223) +
+            m[0][2] * (m[1][0] * a1323 - m[1][1] * a0323 + m[1][3] * a0123) -
+            m[0][3] * (m[1][0] * a1223 - m[1][1] * a0223 + m[1][2] * a0123)};
+
 
     assert(det > 0 && "Matrix is not invertible.");
-    det = 1 / det;
+    det = 1.0f / det;
 
     mat4 result;
     result[0][0] = det * (m[1][1] * a2323 - m[1][2] * a1323 + m[1][3] * a1223);
@@ -161,20 +161,20 @@ mat4 mat4::inverse() const {
     return result;
 }
 
-vec4f& mat4::operator [] (int x) {
+vec4f& mat4::operator [] (u8 x) {
     return m[x];
 }
 
-const vec4f& mat4::operator [] (int x) const {
+const vec4f& mat4::operator [] (u8 x) const {
     return m[x];
 }
 
 mat4 mat4::operator * (const mat4& m) const {
     mat4 result;
 
-    for (int x = 0; x < 4; x++) {
-        for (int y = 0; y < 4; y++) {
-            for (int i = 0; i < 4; i++) {
+    for (u8 x{0}; x < 4; x++) {
+        for (u8 y{0}; y < 4; y++) {
+            for (u8 i{0}; i < 4; i++) {
                 result[x][y] += (*this)[x][i] * m[i][y];
             }
         }
@@ -191,9 +191,9 @@ mat4& mat4::operator *= (const mat4& m) {
 vec4f mat4::operator * (const vec4f& v) const {
     vec4f result;
 
-    for (int x = 0; x < 4; x++) {
-        float i = 0;
-        for (int y = 0; y < 4; y++) {
+    for (u8 x{0}; x < 4; x++) {
+        f32 i{0};
+        for (u8 y{0}; y < 4; y++) {
             i += (*this)[x][y] * v[y];
         }
         result[x] = i;
@@ -203,12 +203,12 @@ vec4f mat4::operator * (const vec4f& v) const {
 }
 
 mat4 vlk::look_at(vec3f pos, vec3f target, vec3f up) {
-    vec3f diff = (target - pos);
-    vec3f forward = diff.normalize();
-    vec3f right = forward.cross(up).normalize();
-    vec3f local_up = right.cross(forward).normalize();
+    vec3f diff{target - pos};
+    vec3f forward{diff.normalize()};
+    vec3f right{forward.cross(up).normalize()};
+    vec3f local_up{right.cross(forward).normalize()};
 
-    mat4 m(1);
+    mat4 m{1.0f};
     m[0][0] = right.x();
     m[1][0] = right.y();
     m[2][0] = right.z();
@@ -224,11 +224,10 @@ mat4 vlk::look_at(vec3f pos, vec3f target, vec3f up) {
     return m;
 }
 
-mat4 vlk::perspective(float aspect, float fov, float near, float far) {
+mat4 vlk::perspective(f32 aspect, f32 fov, f32 near, f32 far) {
+    f32 half_tan{std::tan(fov / 2)};
+
     mat4 m;
-
-    float half_tan = std::tan(fov / 2);
-
     m[0][0] = 1 / (half_tan * aspect);
     m[1][1] = 1 / half_tan;
     m[2][2] = -(far + near) / (far - near);

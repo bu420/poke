@@ -1,4 +1,4 @@
-#include "gfx.hpp"
+#include "vlk.gfx.hpp"
 
 #include <algorithm>
 #include <fstream>
@@ -63,12 +63,13 @@ struct line3d_stepper {
         increment.attribute_count = current.attribute_count;
 
         for (u8 i{0}; i < line.start.attribute_count; ++i) {
-            assert(line.start.attributes[i].count == line.end.attributes[i].count);
+            assert(line.start.attributes[i].size == line.end.attributes[i].size);
             increment.attributes[i].size = line.start.attributes[i].size;
 
             for (u8 j{0}; j < line.start.attributes[i].size; ++j) {
                 increment.attributes[i].data[j] =
-                    (line.end.attributes[i].data[j] - line.start.attributes[i].data[j]) / steps;
+                    (line.end.attributes[i].data[j] - 
+                     line.start.attributes[i].data[j]) / static_cast<f32>(steps);
             }
         }
     }
@@ -133,9 +134,9 @@ vertex vertex::lerp(const vertex& other, f32 amount) const {
 }
 
 // This function assumes that the entire triangle is visible.
-void fill_triangle(optional_reference<color_buffer> color_buf,
-                   optional_reference<depth_buffer> depth_buf,
-                   std::array<vertex, 3> vertices,
+void fill_triangle(std::array<vertex, 3> vertices, 
+                   optional_ref<color_buffer> color_buf,
+                   optional_ref<depth_buffer> depth_buf,
                    pixel_shader_callback pixel_shader) {
     assert(color_buf.has_value() || depth_buf.has_value() &&
            "Either a color buffer, depth buffer or both must be present.");
@@ -152,8 +153,8 @@ void fill_triangle(optional_reference<color_buffer> color_buf,
     }
 
     const vec2i framebuffer_size(color_buf.has_value() ?
-                                 vec2i(color_buf.value().get().get_width(), color_buf.value().get().get_height()) :
-                                 vec2i(depth_buf.value().get().get_width(), depth_buf.value().get().get_height()));
+                                 vec2i(static_cast<i32>(color_buf.value().get().get_width()), static_cast<i32>(color_buf.value().get().get_height())) :
+                                 vec2i(static_cast<i32>(depth_buf.value().get().get_width()), static_cast<i32>(depth_buf.value().get().get_height())));
 
     // Viewport transformation. 
     // Convert [-1, 1] to framebuffer size.
@@ -161,8 +162,8 @@ void fill_triangle(optional_reference<color_buffer> color_buf,
     for (auto& vertex : vertices) {
         auto& pos = vertex.position;
 
-        pos.x() = std::round((pos.x() + 1) / 2.f * (framebuffer_size.x() - 1));
-        pos.y() = std::round((pos.y() + 1) / 2.f * (framebuffer_size.y() - 1));
+        pos.x() = std::round((pos.x() + 1.0f) / 2.0f * (static_cast<f32>(framebuffer_size.x()) - 1.0f));
+        pos.y() = std::round((pos.y() + 1.0f) / 2.0f * (static_cast<f32>(framebuffer_size.y()) - 1.0f));
     }
 
     // Position aliases.
@@ -256,7 +257,7 @@ std::vector<vertex> triangle_clip_component(const std::vector<vertex>& vertices,
         std::vector<vertex> result;
         result.reserve(vertices.size());
 
-        for (std::size_t i{0}; i < vertices.size(); ++i) {
+        for (size_t i{0}; i < vertices.size(); ++i) {
             const vertex& curr_vertex = vertices[i];
             const vertex& prev_vertex = vertices[(i - 1 + vertices.size()) % vertices.size()];
 
@@ -305,9 +306,9 @@ std::vector<vertex> triangle_clip(const std::array<vertex, 3>& vertices) {
     return result;
 }
 
-void vlk::render_triangle(optional_reference<color_buffer> color_buf,
-                          optional_reference<depth_buffer> depth_buf,
-                          std::array<vertex, 3> vertices,
+void vlk::render_triangle(std::array<vertex, 3> vertices, 
+                          optional_ref<color_buffer> color_buf,
+                          optional_ref<depth_buffer> depth_buf,
                           pixel_shader_callback pixel_shader) {
     auto is_point_visible = [](const vec4f& p) {
         return p.x() >= -p.w() && p.x() <= p.w() && p.y() >= -p.w() && p.y() <= p.w() && p.z() >= -p.w() && p.z() <= p.w();
@@ -324,7 +325,7 @@ void vlk::render_triangle(optional_reference<color_buffer> color_buf,
 
     // If all points are visible, draw triangle.
     if (is_p0_visible && is_p1_visible && is_p2_visible) {
-        fill_triangle(color_buf, depth_buf, vertices, pixel_shader);
+        fill_triangle(vertices, color_buf, depth_buf, pixel_shader);
         return;
     }
     // If no vertices are visible, discard triangle.
@@ -337,124 +338,10 @@ void vlk::render_triangle(optional_reference<color_buffer> color_buf,
     std::vector<vertex> clipped_vertices = triangle_clip(vertices);
     assert(clipped_vertices.size() >= 3);
 
-    for (std::size_t i{1}; i < clipped_vertices.size() - 1; ++i) {
-        fill_triangle(color_buf, depth_buf, {clipped_vertices[0], clipped_vertices[i], clipped_vertices[i + 1]}, pixel_shader);
+    for (size_t i{1}; i < clipped_vertices.size() - 1; ++i) {
+        fill_triangle({clipped_vertices[0], clipped_vertices[i], clipped_vertices[i + 1]}, 
+                      color_buf, 
+                      depth_buf, 
+                      pixel_shader);
     }
-}
-
-std::optional<model> vmod_parser::parse(const std::vector<std::byte>& buf) {
-    model vmod;
-    vmod.meshes.resize(1);
-
-    // Skip the first 16 bytes (it's the unused header).
-    std::size_t byte_pos{16};
-
-    // Parse positions.
-
-    vmod.meshes[0].positions.resize(get_next_int(buf, byte_pos));
-
-    for (auto& position : vmod.meshes[0].positions) {
-        for (auto& attribute : position) {
-            attribute = get_next_float(buf, byte_pos);
-        }
-    }
-
-    // Parse texture coordinates.
-
-    vmod.meshes[0].tex_coords.resize(get_next_int(buf, byte_pos));
-
-    for (auto& tex_coord : vmod.meshes[0].tex_coords) {
-        for (auto& attribute : tex_coord) {
-            attribute = get_next_float(buf, byte_pos);
-        }
-    }
-
-    // Parse normals.
-
-    vmod.meshes[0].normals.resize(get_next_int(buf, byte_pos));
-
-    for (auto& normal : vmod.meshes[0].normals) {
-        for (auto& attribute : normal) {
-            attribute = get_next_float(buf, byte_pos);
-        }
-    }
-
-    // Parse images.
-
-    vmod.images.resize(get_next_int(buf, byte_pos));
-
-    for (auto& image : vmod.images) {
-
-    }
-
-    // Parse faces.
-
-    vmod.meshes[0].faces.resize(get_next_int(buf, byte_pos));
-
-    for (auto& face : vmod.meshes[0].faces) {
-
-    }
-}
-
-std::optional<model> vmod_parser::parse(const std::string& path) {
-    std::ifstream file(path, std::ios_base::binary);
-
-    if (!file.is_open()) {
-        return std::nullopt;
-    }
-
-    const std::vector<std::byte> buf((std::istreambuf_iterator<char>(file)),
-                                     std::istreambuf_iterator<char>());
-
-    file.close();
-
-    if (buf.empty()) {
-        return std::nullopt;
-    }
-
-    return vmod_parser::parse(buf);
-}
-
-i32 vmod_parser::get_next_int(const std::vector<std::byte>& buf, 
-                              std::size_t& byte_pos) {
-    i32 result{0};
-
-    for (std::size_t i{0}; i < 4; ++i) {
-        std::byte byte = buf.at(byte_pos + i);
-        byte_pos++;
-
-        // Byte 1-3 have a special bit flag at the end. Handle the 4th byte differently.
-        if (i < 3) {
-            // The last bit signals whether to read the next byte or to stop after this one.
-            bool is_last_bit_set = (byte & std::byte{0b10000000}) != std::byte{0b00000000};
-
-            // Discard last bit.
-            byte &= std::byte{0b01111111};
-
-            // Add the 7 bits to the result (last bit is used as a flag, see above).
-            result |= (static_cast<i32>(byte) << (i * 7));
-
-            if (!is_last_bit_set) {
-                break;
-            }
-        }
-        else {
-            result |= (static_cast<i32>(byte) << (i * 7));
-        }
-    }
-
-    return result;
-}
-
-f32 vmod_parser::get_next_float(const std::vector<std::byte>& buf, 
-                                std::size_t& byte_pos) {
-    i32 result =
-        static_cast<i32>(buf[byte_pos]) |
-        (static_cast<i32>(buf[byte_pos + 1]) << 8) |
-        (static_cast<i32>(buf[byte_pos + 2]) << 16) |
-        (static_cast<i32>(buf[byte_pos + 3]) << 24);
-
-    byte_pos += 4;
-
-    return std::bit_cast<f32>(result);
 }

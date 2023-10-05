@@ -5,23 +5,23 @@
 #else
 #error "Unsupported system."
 #endif
-
 #include <string>
 #include <vector>
 #include <cstdint>
 
-#include <valkyrie/gfx.hpp>
+#include "vlk.types.hpp"
+#include "vlk.gfx.hpp"
 
 namespace vlk {
     void initialize();
     void terminate();
 
-    double get_elapsed_time();
-    int64_t get_ticks_per_sec();
+    f64 get_elapsed_time();
+    i64 get_ticks_per_sec();
 
     class window {
     public:
-        window(const std::string& title, int width, int height);
+        window(const std::string& title, i32 width, i32 height);
 
         void poll_events();
         void swap_buffers(const color_buffer& color_buf);
@@ -29,18 +29,18 @@ namespace vlk {
         bool get_should_close() const;
         void set_should_close(bool should_close);
 
-        int get_width() const;
-        int get_height() const;
+        i32 get_width() const;
+        i32 get_height() const;
 
-        uint32_t* get_ptr();
+        const std::vector<u32>& get_front_buf() const;
 
     private:
         HWND hwnd;
         bool should_close;
 
-        int width;
-        int height;
+        i32 width;
+        i32 height;
 
-        std::vector<uint32_t> front_buf;
+        std::vector<u32> front_buf;
     };
 }
