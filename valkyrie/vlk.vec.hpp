@@ -9,16 +9,14 @@ namespace vlk {
     class mat3;
     class mat4;
 
-    template <typename T> 
+    template <typename T>
     class vec2 {
     private:
         T arr[2] = {};
 
     public:
-        template <typename... Init> 
-        vec2(Init... init) :
-            arr{init...} {
-        }
+        vec2() = default;
+        vec2(T a, T b) : arr{a, b} {}
 
         T* begin() { return &arr[0]; }
         const T* begin() const { return &arr[0]; }
@@ -84,16 +82,16 @@ namespace vlk {
     using vec2f = vec2<f32>;
     using vec2i = vec2<i32>;
 
-    template <typename T> 
+    template <typename T>
     class vec3 {
     private:
         T arr[3];
 
     public:
-        template <typename... Init> 
-        vec3(Init... init) :
-            arr{init...} {
-        }
+        vec3() = default;
+        vec3(T a, T b, T c) : arr{a, b, c} {}
+        vec3(const vec2<T>& ab, T c) : arr{ab[0], ab[1], c} {}
+        vec3(T a, const vec2<T>& bc) : arr{a, bc[0], bc[1]} {}
 
         T* begin() { return &arr[0]; }
         const T* begin() const { return &arr[0]; }
@@ -211,16 +209,23 @@ namespace vlk {
     using vec3f = vec3<f32>;
     using vec3i = vec3<i32>;
 
-    template <typename T> 
+    template <typename T>
     class vec4 {
     private:
         T arr[4] = {};
 
     public:
-        template <typename... Init> 
-        vec4(Init... init) :
-            arr{init...} {
-        }
+        vec4() = default;
+        vec4(T a, T b, T c, T d) : arr{a, b, c, d} {}
+        vec4(const vec2<T>& ab, T c, T d) : arr{ab[0], ab[1], c, d} {}
+        vec4(T a, const vec2<T>& bc, T d) : arr{a, bc[0], bc[1], d} {}
+        vec4(T a, T b, const vec2<T>& cd) : arr{a, b, cd[0], cd[1]} {}
+        vec4(const vec2<T>& ab, const vec2<T>& cd) : arr{ab[0], ab[1], cd[0], cd[1]} {}
+        vec4(const vec3<T>& abc, T d) : arr{abc[0], abc[1], abc[2], d} {}
+        vec4(T a, const vec3<T>& bcd) : arr{a, bcd[0], bcd[1], bcd[2]} {}
+
+        vec4(const vec2<T>& ab, T c) : arr{ab[0], ab[1], c} {}
+        vec4(T a, const vec2<T>& bc) : arr{a, bc[0], bc[1]} {}
 
         T* begin() { return &arr[0]; }
         const T* begin() const { return &arr[0]; }

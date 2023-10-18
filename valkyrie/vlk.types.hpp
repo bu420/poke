@@ -23,12 +23,8 @@ namespace vlk {
     using f32 = float;
     using f64 = double;
 
-    struct byte3 {
-        std::byte x;
-        std::byte y;
-        std::byte z;
-    };
-
     template<typename T> 
     using optional_ref = std::optional<std::reference_wrapper<T>>;
+
+    std::byte operator ""_byte (size_t value);
 }

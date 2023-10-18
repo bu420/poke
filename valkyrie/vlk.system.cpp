@@ -78,11 +78,11 @@ void window::swap_buffers(const color_buffer& color_buf) {
     // Copy color buffer (back buffer) into window front buffer.
     for (size_t x{0}; x < color_buf.get_width(); ++x) {
         for (size_t y{0}; y < color_buf.get_height(); ++y) {
-            byte3 color{color_buf.at(x, y)};
+            color_rgb color{color_buf.at(x, y)};
 
-            u32 packed{static_cast<u32>(color.x) << 16 |
-                       static_cast<u32>(color.y) << 8 |
-                       static_cast<u32>(color.z)};
+            u32 packed{static_cast<u32>(color.r) << 16 |
+                       static_cast<u32>(color.g) << 8 |
+                       static_cast<u32>(color.b)};
 
             front_buf.at(y * color_buf.get_width() + x) = packed;
         }

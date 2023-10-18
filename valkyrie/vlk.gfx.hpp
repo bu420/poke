@@ -2,19 +2,33 @@
 
 #include <vector>
 #include <array>
+#include <string>
 #include <optional>
 #include <functional>
-#include <string>
+#include <any>
 #include <unordered_map>
 
 #include "vlk.types.hpp"
 #include "vlk.math.hpp"
 
 namespace vlk {
-    template <typename T> 
-    class buffer2d {
+    struct color_rgb {
+        std::byte r;
+        std::byte g;
+        std::byte b;
+    };
+
+    struct color_rgba {
+        std::byte r;
+        std::byte g;
+        std::byte b;
+        std::byte a;
+    };
+
+    template <typename T>
+    class buffer {
     public:
-        buffer2d(size_t width, size_t height) :
+        buffer(size_t width, size_t height) :
             width{width},
             height{height} {
             data.resize(width * height);
@@ -27,11 +41,21 @@ namespace vlk {
         size_t get_width() const { return width; }
         size_t get_height() const { return height; }
 
-        T& operator [] (size_t i) { return data.at(i); }
-        const T& operator [] (size_t i) const { return data.at(i); }
+        T& operator [] (size_t i) {
+            assert(i >= 0 and i < data.size());
+            return data[i];
+        }
+        const T& operator [] (size_t i) const {
+            assert(i >= 0 and i < data.size());
+            return data[i];
+        }
 
-        T& at(size_t x, size_t y) { return data.at(y * width + x); }
-        const T& at(size_t x, size_t y) const { return data.at(y * width + x); }
+        T& at(size_t x, size_t y) {
+            return (*this)[y * width + x];
+        }
+        const T& at(size_t x, size_t y) const { 
+            return (*this)[y * width + x];
+        }
 
     protected:
         size_t width;
@@ -39,8 +63,8 @@ namespace vlk {
         std::vector<T> data;
     };
 
-    using color_buffer = buffer2d<byte3>;
-    using depth_buffer = buffer2d<float>;
+    using color_buffer = buffer<color_rgb>;
+    using depth_buffer = buffer<f32>;
 
     struct attribute {
         vec4f data;
@@ -58,17 +82,17 @@ namespace vlk {
     };
 
     struct vertex {
-        vec4f position;
+        vec4f pos;
 
         std::array<attribute, 4> attributes;
         u8 attribute_count;
 
-        vertex() : attribute_count{0} {}
-        vertex(const vec4f& position) : position{position}, attribute_count{0} {}
+        vertex() = default;
+        vertex(const vec4f& pos) : pos{pos}, attribute_count{0} {}
 
-        template <typename... T> 
-        vertex(const vec4f& position, T... attributes) :
-            position{position},
+        template <typename... T>
+        vertex(const vec4f& pos, T... attributes) :
+            pos{pos},
             attributes{attributes...},
             attribute_count{sizeof...(T)} {
         }
@@ -76,13 +100,25 @@ namespace vlk {
         vertex lerp(const vertex& other, f32 amount) const;
     };
 
-    using pixel_shader_callback =
-        std::function<std::optional<byte3>(const vertex&)>;
+    using pixel_shader_callback = std::function<color_rgba(const vertex& vertex,
+                                                           optional_ref<std::any> user_data)>;
 
-    void render_triangle(std::array<vertex, 3> vertices, 
-                         optional_ref<color_buffer> color_buf,
-                         optional_ref<depth_buffer> depth_buf,
-                         pixel_shader_callback pixel_shader);
+    using color_blend_func_callback = std::function<color_rgb(const color_rgb& old_color,
+                                                              const color_rgba& new_color)>;
+
+    color_rgb default_color_blend_func(const color_rgb& old_color,
+                                       const color_rgba& new_color);
+
+    struct render_triangle_params {
+        std::array<vertex, 3> vertices;
+        optional_ref<std::any> user_data;
+        optional_ref<color_buffer> color_buf;
+        optional_ref<depth_buffer> depth_buf;
+        pixel_shader_callback pixel_shader;
+        color_blend_func_callback color_blend_func = default_color_blend_func;
+    };
+
+    void render_triangle(const render_triangle_params& params);
 
     struct image {
         size_t width;

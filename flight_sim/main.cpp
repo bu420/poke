@@ -15,11 +15,12 @@ int main() {
 
     initialize();
 
-    auto model = load_model_obj("../assets/bullfrog.obj");
-
-    if (!model.has_value()) {
-        std::cout << "Failed to load assets." << std::endl;
-        return -1;
+    model model;
+    try {
+        model = parse_obj("../assets/bullfrog.obj");
+    }
+    catch (std::runtime_error e) {
+        std::cout << e.what() << std::endl;
     }
 
     window win{"flight sim", width, height};
@@ -27,8 +28,8 @@ int main() {
     color_buffer color_buf{width, height};
     depth_buffer depth_buf{width, height};
 
-    const mat4 projection_matrix = perspective(height / static_cast<float>(width),
-                                               70 * (static_cast<float>(std::numbers::pi) / 180),
+    const mat4 projection_matrix = perspective(height / static_cast<f32>(width),
+                                               70 * (static_cast<f32>(std::numbers::pi) / 180),
                                                0.001f,
                                                1000.f);
 
@@ -42,63 +43,37 @@ int main() {
         depth_buf.clear(1.0f);
 
         mat4 model_matrix{1.0f};
-        model_matrix = model_matrix.rotate_x(static_cast<float>(90.f * (std::numbers::pi / 180)));
-        model_matrix = model_matrix.rotate_y(static_cast<float>(get_elapsed_time() * std::numbers::pi / 1500));
-        //model_matrix = model_matrix.rotate_z(static_cast<float>(vlk::get_elapsed_time() * std::numbers::pi / 4000));
-        model_matrix = model_matrix.translate({0.f, 0.f, static_cast<float>((std::sin(get_elapsed_time() / 750) + 1) * 17)});
+        model_matrix = model_matrix.rotate_x(static_cast<f32>(90.f * (std::numbers::pi / 180)));
+        model_matrix = model_matrix.rotate_y(static_cast<f32>(get_elapsed_time() * std::numbers::pi / 1500));
+        model_matrix = model_matrix.translate({0.f, 0.f, static_cast<f32>((std::sin(get_elapsed_time() / 750) + 1) * 17)});
 
         mat4 mvp_matrix{model_matrix * view_matrix * projection_matrix};
         mat3 normal_matrix{model_matrix.inverse().transpose()};
 
-        //std::vector<bool> should_cull(model.value().meshes[0].faces.size());
+        render_model(
+            {
+                .model{model},
+                .mvp_matrix{mvp_matrix},
+                .normal_matrix{normal_matrix},
+                .color_buf{color_buf},
+                .depth_buf{depth_buf},
+            });
 
-        // Backface culling.
-        /*for (int i = 0; i < model.value().meshes[0].faces.size(); i++) {
-            // Pick any one of the triangle's points, put it in model space and check if the triangle should be culled.
-            vlk::vec4f any_point_on_triangle = positions[model.value().meshes[0].faces[i].at(0)] * model;
-
-            vlk::vec3f dir = (any_point_on_triangle.xyz() - camera_pos).normalize();
-            vlk::vec3f normal = model.value().meshes[0].normals.value()[model.value().meshes[0].faces[i].at(0)] * normal_matrix;
-
-            should_cull[i] = dir.dot(normal) >= 0;
-        }*/
-
-        render_model(*model, mvp_matrix, color_buf, depth_buf);
-
-        // Render mesh.
-        /*for (int i = 0; i < model3d.meshes[0].faces.size(); i++) {
-            if (should_cull[i]) {
-                continue;
-            }
-
-            const auto& face = model3d.meshes[0].faces[i];
-
-            std::array<vlk::vec3f, 3> normals = {
-                model3d.meshes[0].normals[face.indices[0].normal] * normal_matrix,
-                model3d.meshes[0].normals[face.indices[1].normal] * normal_matrix,
-                model3d.meshes[0].normals[face.indices[2].normal] * normal_matrix
-            };
-
-            std::array<vlk::vertex, 3> vertices = {
-                vlk::vertex(positions[face.indices[0].pos], vlk::attribute(normals[0])),
-                vlk::vertex(positions[face.indices[1].pos], vlk::attribute(normals[1])),
-                vlk::vertex(positions[face.indices[2].pos], vlk::attribute(normals[2]))
-            };
-
-            vlk::render_triangle(color_buf, depth_buf, vertices,
-                                 [](const vlk::vertex& vertex) -> vlk::byte3 {
-                                     vlk::vec4f pos = vertex.position;
-
-                                     vlk::vec3f normal(vertex.attributes[0].data.xyz());
-                                     vlk::vec3f color((normal + 1.f) * 127.f);
-
-                                     return {
-                                         static_cast<vlk::byte>(color.x()),
-                                         static_cast<vlk::byte>(color.y()),
-                                         static_cast<vlk::byte>(color.z())
-                                     };
-                                 });
-        }*/
+        /*render_triangle(
+            {
+                .vertices{
+                    vertex{vec4f{-0.5f, -0.5f, 0.0f, 1.0f}},
+                    vertex{vec4f{0.5f, -0.5f, 0.0f, 1.0f}},
+                    vertex{vec4f{0.0f, 0.5f, 0.0f, 1.0f}}
+                },
+                .color_buf{color_buf},
+                .depth_buf{depth_buf},
+                .pixel_shader{
+                    [](const vertex&, optional_ref<std::any>) {
+                        return color_rgba{255_byte, 0_byte, 0_byte};
+                    }
+                }
+            });*/
 
         win.swap_buffers(color_buf);
     }

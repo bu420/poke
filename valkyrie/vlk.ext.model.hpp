@@ -1,6 +1,6 @@
 /* 
 * This is an extension.
-* This depends on "stb_image.h" to load material images.
+* It depends on "stb_image.h" to load material images.
 */
 
 #pragma once
@@ -24,27 +24,43 @@ namespace vlk {
         };
 
         struct mesh {
+            std::string material_name;
+
+            bool has_tex_coords;
+            bool has_normals;
+
             std::vector<vec3f> positions;
-            std::optional<std::vector<vec2f>> tex_coords;
-            std::optional<std::vector<vec3f>> normals;
+            std::vector<vec2f> tex_coords;
+            std::vector<vec3f> normals;
 
-            std::vector<std::array<size_t, 3>> faces;
+            struct face {
+                std::array<size_t, 3> position_indices;
+                std::array<size_t, 3> tex_coord_indices;
+                std::array<size_t, 3> normal_indices;
+            };
 
-            std::optional<size_t> material_index;
+            std::vector<face> faces;
         };
 
         std::vector<mesh> meshes;
-        std::vector<material> materials;
+        std::unordered_map<std::string, material> materials;
         std::unordered_map<std::string, image> images;
     };
 
-    std::optional<model> load_model_obj(const std::string& path);
+    model parse_obj(const std::string& path);
 
-    std::optional<byte3> default_model_pixel_shader(const vertex&);
+    color_rgba default_model_pixel_shader(const vertex& vertex, 
+                                          optional_ref<std::any> user_data);
 
-    void render_model(const model& model,
-                      const mat4& transformation,
-                      optional_ref<color_buffer> color_buf,
-                      optional_ref<depth_buffer> depth_buf,
-                      pixel_shader_callback pixel_shader = default_model_pixel_shader);
+    struct render_model_params {
+        model model;
+        optional_ref<std::any> user_data;
+        mat4 mvp_matrix;
+        mat3 normal_matrix;
+        optional_ref<color_buffer> color_buf;
+        optional_ref<depth_buffer> depth_buf;
+        pixel_shader_callback pixel_shader = default_model_pixel_shader;
+    };
+
+    void render_model(const render_model_params& params);
 }
