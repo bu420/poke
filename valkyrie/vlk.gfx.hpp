@@ -13,17 +13,19 @@
 
 namespace vlk {
     struct color_rgb {
-        std::byte r;
-        std::byte g;
-        std::byte b;
+        u8 r;
+        u8 g;
+        u8 b;
     };
 
     struct color_rgba {
-        std::byte r;
-        std::byte g;
-        std::byte b;
-        std::byte a;
+        u8 r;
+        u8 g;
+        u8 b;
+        u8 a;
     };
+
+    static_assert(sizeof(color_rgb) == 3 and sizeof(color_rgba) == 4);
 
     template <typename T>
     class buffer {
@@ -53,7 +55,7 @@ namespace vlk {
         T& at(size_t x, size_t y) {
             return (*this)[y * width + x];
         }
-        const T& at(size_t x, size_t y) const { 
+        const T& at(size_t x, size_t y) const {
             return (*this)[y * width + x];
         }
 
@@ -100,22 +102,43 @@ namespace vlk {
         vertex lerp(const vertex& other, f32 amount) const;
     };
 
-    using pixel_shader_callback = std::function<color_rgba(const vertex& vertex,
-                                                           optional_ref<std::any> user_data)>;
+    struct line3d {
+        vertex start;
+        vertex end;
+    };
 
-    using color_blend_func_callback = std::function<color_rgb(const color_rgb& old_color,
-                                                              const color_rgba& new_color)>;
+    struct line3d_stepper {
+        enum class calc_steps_based_on {
+            largest_difference,
+            x_difference,
+            y_difference
+        };
 
-    color_rgb default_color_blend_func(const color_rgb& old_color,
-                                       const color_rgba& new_color);
+        vertex current;
+        vertex increment;
+
+        i32 steps{0};
+        i32 i{0};
+
+        line3d_stepper(line3d line, calc_steps_based_on line_type);
+
+        bool step();
+    };
+
+    using pixel_shader_func = std::function<color_rgba(const vertex&)>;
+
+    using color_blend_func = std::function<color_rgb(const color_rgb& old_color,
+                                                     const color_rgba& new_color)>;
+
+    color_rgb default_color_blend(const color_rgb& old_color,
+                                  const color_rgba& new_color);
 
     struct render_triangle_params {
         std::array<vertex, 3> vertices;
-        optional_ref<std::any> user_data;
         optional_ref<color_buffer> color_buf;
         optional_ref<depth_buffer> depth_buf;
-        pixel_shader_callback pixel_shader;
-        color_blend_func_callback color_blend_func = default_color_blend_func;
+        pixel_shader_func pixel_shader;
+        color_blend_func color_blend = default_color_blend;
     };
 
     void render_triangle(const render_triangle_params& params);
@@ -125,5 +148,70 @@ namespace vlk {
         size_t height;
         u8 channels;
         std::vector<std::byte> data;
+
+        std::vector<std::byte>::iterator at(size_t x, size_t y);
+        std::vector<std::byte>::const_iterator at(size_t x, size_t y) const;
+
+        std::vector<std::byte>::iterator sample(f32 x, f32 y);
+        std::vector<std::byte>::const_iterator sample(f32 x, f32 y) const;
     };
+
+    struct model {
+        struct material {
+            std::string name;
+
+            size_t albedo_map_index;
+            size_t normal_map_index;
+            size_t roughness_map_index;
+            size_t metallic_map_index;
+            size_t opacity_map_index;
+        };
+
+        struct mesh {
+            size_t material_index;
+
+            bool has_tex_coords;
+            bool has_normals;
+
+            struct face {
+                std::array<size_t, 3> position_indices;
+                std::array<size_t, 3> tex_coord_indices;
+                std::array<size_t, 3> normal_indices;
+            };
+
+            std::vector<face> faces;
+        };
+
+        std::vector<vec3f> positions;
+        std::vector<vec2f> tex_coords;
+        std::vector<vec3f> normals;
+
+        std::vector<mesh> meshes;
+        std::vector<material> materials;
+        std::vector<image> images;
+
+        static constexpr size_t invalid_index = (size_t)-1;
+    };
+
+    using model_pixel_shader_func = std::function<color_rgba(const vertex&,
+                                                             const model&,
+                                                             const model::material&)>;
+
+    color_rgba default_model_pixel_shader(const vertex& vertex,
+                                          const model& model,
+                                          const model::material& material);
+
+    struct render_model_params {
+        model model;
+        mat4 mvp_matrix;
+        mat3 normal_matrix;
+
+        std::array<vertex, 3> vertices;
+        optional_ref<color_buffer> color_buf;
+        optional_ref<depth_buffer> depth_buf;
+        model_pixel_shader_func pixel_shader = default_model_pixel_shader;
+        color_blend_func color_blend = default_color_blend;
+    };
+
+    void render_model(const render_model_params& params);
 }

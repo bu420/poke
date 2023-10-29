@@ -1,11 +1,12 @@
 #include <valkyrie/vlk.math.hpp>
 #include <valkyrie/vlk.gfx.hpp>
 #include <valkyrie/vlk.system.hpp>
-#include <valkyrie/vlk.ext.model.hpp>
+#include <valkyrie/vlk.ext.parse_obj.hpp>
 
 #include <numbers>
 #include <algorithm>
-#include <iostream>
+#include <print>
+#include <filesystem>
 
 using namespace vlk;
 
@@ -15,13 +16,18 @@ int main() {
 
     initialize();
 
+    std::print("Working directory : {}\n", std::filesystem::current_path().string());
+
     model model;
     try {
-        model = parse_obj("../assets/bullfrog.obj");
+        model = parse_obj("../assets/gear/Gear1.obj");
     }
     catch (std::runtime_error e) {
-        std::cout << e.what() << std::endl;
+        std::print("{}\n", e.what());
+        return -1;
     }
+
+    std::print("Assets loaded.\n");
 
     window win{"flight sim", width, height};
 
@@ -39,13 +45,12 @@ int main() {
     while (!win.get_should_close()) {
         win.poll_events();
 
-        color_buf.clear({std::byte{255}, std::byte{255}, std::byte{255}});
+        color_buf.clear({255, 255, 255});
         depth_buf.clear(1.0f);
 
         mat4 model_matrix{1.0f};
-        model_matrix = model_matrix.rotate_x(static_cast<f32>(90.f * (std::numbers::pi / 180)));
         model_matrix = model_matrix.rotate_y(static_cast<f32>(get_elapsed_time() * std::numbers::pi / 1500));
-        model_matrix = model_matrix.translate({0.f, 0.f, static_cast<f32>((std::sin(get_elapsed_time() / 750) + 1) * 17)});
+        model_matrix = model_matrix.translate({0.0f, 5.0f, 0.0f});
 
         mat4 mvp_matrix{model_matrix * view_matrix * projection_matrix};
         mat3 normal_matrix{model_matrix.inverse().transpose()};
@@ -56,24 +61,8 @@ int main() {
                 .mvp_matrix{mvp_matrix},
                 .normal_matrix{normal_matrix},
                 .color_buf{color_buf},
-                .depth_buf{depth_buf},
+                .depth_buf{depth_buf}
             });
-
-        /*render_triangle(
-            {
-                .vertices{
-                    vertex{vec4f{-0.5f, -0.5f, 0.0f, 1.0f}},
-                    vertex{vec4f{0.5f, -0.5f, 0.0f, 1.0f}},
-                    vertex{vec4f{0.0f, 0.5f, 0.0f, 1.0f}}
-                },
-                .color_buf{color_buf},
-                .depth_buf{depth_buf},
-                .pixel_shader{
-                    [](const vertex&, optional_ref<std::any>) {
-                        return color_rgba{255_byte, 0_byte, 0_byte};
-                    }
-                }
-            });*/
 
         win.swap_buffers(color_buf);
     }
