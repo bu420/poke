@@ -6,7 +6,6 @@
 #pragma once
 
 #include <string>
-#include <stdexcept>
 
 #include "vlk.gfx.hpp"
 

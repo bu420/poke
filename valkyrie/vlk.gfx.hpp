@@ -65,7 +65,7 @@ namespace vlk {
         std::vector<T> data;
     };
 
-    using color_buffer = buffer<color_rgb>;
+    using color_buffer = buffer<color_rgba>;
     using depth_buffer = buffer<f32>;
 
     struct attribute {
@@ -127,11 +127,11 @@ namespace vlk {
 
     using pixel_shader_func = std::function<color_rgba(const vertex&)>;
 
-    using color_blend_func = std::function<color_rgb(const color_rgb& old_color,
-                                                     const color_rgba& new_color)>;
+    using color_blend_func = std::function<color_rgba(const color_rgba& old_color,
+                                                      const color_rgba& new_color)>;
 
-    color_rgb default_color_blend(const color_rgb& old_color,
-                                  const color_rgba& new_color);
+    color_rgba default_color_blend(const color_rgba& old_color,
+                                   const color_rgba& new_color);
 
     struct render_triangle_params {
         std::array<vertex, 3> vertices;

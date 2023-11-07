@@ -1,6 +1,7 @@
 #include "vlk.system.hpp"
 
 #include <cassert>
+#include <stdexcept>
 
 using namespace vlk;
 
@@ -33,38 +34,89 @@ i64 vlk::get_ticks_per_sec() {
     return ticks_per_second.QuadPart;
 }
 
-window::window(const std::string& title, i32 width, i32 height) :
-    should_close(false), 
-    width(width), 
-    height(height) {
-    std::wstring wide_title;
-    wide_title.assign(title.begin(), title.end());
+window::window(const window_params& params) :
+    should_close{false},
+    width{params.width},
+    height{params.height},
+    transparent{params.transparent} {
+    // Create window.
 
-    HWND hwnd = CreateWindowEx(0, 
-                               vlk_window_class_name, 
-                               wide_title.c_str(), 
-                               WS_OVERLAPPEDWINDOW,
-                               CW_USEDEFAULT, 
-                               CW_USEDEFAULT, 
-                               width, 
-                               height, 
-                               NULL, 
-                               NULL, 
-                               GetModuleHandle(0), 
+    std::wstring wide_title;
+    wide_title.assign(params.title.begin(), params.title.end());
+
+    DWORD style = WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP;
+
+    if (params.default_ui) {
+        style |= WS_CAPTION | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME;
+    }
+
+    DWORD ex_style = WS_EX_APPWINDOW | WS_EX_TOPMOST;
+
+    if (transparent) {
+        ex_style |= WS_EX_LAYERED;
+    }
+
+    HWND hwnd = CreateWindowEx(ex_style,
+                               vlk_window_class_name,
+                               wide_title.c_str(),
+                               style,
+                               CW_USEDEFAULT,
+                               CW_USEDEFAULT,
+                               width,
+                               height,
+                               NULL,
+                               NULL,
+                               GetModuleHandle(0),
                                NULL);
 
-    assert(hwnd && "Failed to create win32 window.");
+    if (not hwnd) {
+        throw std::runtime_error("Valkyrie: failed to create win32 window.");
+    }
+
+    if (transparent) {
+        SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
+
+        DWM_BLURBEHIND bb = {0};
+        HRGN hRgn = CreateRectRgn(0, 0, -1, -1);
+        bb.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION;
+        bb.hRgnBlur = hRgn;
+        bb.fEnable = TRUE;
+        DwmEnableBlurBehindWindow(hwnd, &bb);
+    }
 
     this->hwnd = hwnd;
-    front_buf.resize(static_cast<size_t>(width * height));
+    pixels = new u32[width * height];
 
     SetWindowLongPtr(hwnd, 0, (LONG_PTR)this);
 
     ShowWindow(hwnd, SW_SHOW);
+
+    // Create background bitmap.
+
+    BITMAPINFO bmi{0};
+    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    bmi.bmiHeader.biWidth = width;
+    bmi.bmiHeader.biHeight = -height;
+    bmi.bmiHeader.biPlanes = 1;
+    bmi.bmiHeader.biBitCount = 32;
+    bmi.bmiHeader.biCompression = BI_RGB;
+
+    HDC screen_hdc = GetDC(NULL);
+
+    bitmap = CreateDIBSection(screen_hdc,
+                              &bmi,
+                              DIB_RGB_COLORS,
+                              reinterpret_cast<void**>(&pixels),
+                              NULL,
+                              NULL);
+    assert(bitmap);
+
+    ReleaseDC(NULL, screen_hdc);
 }
 
 void window::poll_events() {
     MSG msg;
+
     while (PeekMessage(&msg, hwnd, 0, 0, PM_REMOVE)) {
         TranslateMessage(&msg);
         DispatchMessage(&msg);
@@ -78,13 +130,15 @@ void window::swap_buffers(const color_buffer& color_buf) {
     // Copy color buffer (back buffer) into window front buffer.
     for (size_t x{0}; x < color_buf.get_width(); ++x) {
         for (size_t y{0}; y < color_buf.get_height(); ++y) {
-            color_rgb color{color_buf.at(x, y)};
+            color_rgba color{color_buf.at(x, y)};
 
-            u32 packed{static_cast<u32>(color.r) << 16 |
+            // Win32 bitmaps use a ARGB format.
+            u32 packed{static_cast<u32>(color.a) << 24 |
+                       static_cast<u32>(color.r) << 16 |
                        static_cast<u32>(color.g) << 8 |
                        static_cast<u32>(color.b)};
 
-            front_buf.at(y * color_buf.get_width() + x) = packed;
+            pixels[y * color_buf.get_width() + x] = packed;
         }
     }
 
@@ -108,59 +162,69 @@ i32 window::get_height() const {
     return height;
 }
 
-const std::vector<u32>& window::get_front_buf() const {
-    return front_buf;
+bool window::is_transparent() const {
+    return transparent;
 }
 
 LRESULT CALLBACK win_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param) {
-    window* win = (window*)GetWindowLongPtr(hwnd, 0);
+    auto win = reinterpret_cast<window*>(GetWindowLongPtr(hwnd, 0));
 
     switch (u_msg) {
-    case WM_CLOSE:
-        if (win) {
-            win->set_should_close(true);
-        }
-        return 0;
-
-    case WM_PAINT:
-        PAINTSTRUCT ps;
-        HDC hdc = BeginPaint(hwnd, &ps);
-
-        if (win) {
-            BITMAPINFO bmi{0};
-            bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-            bmi.bmiHeader.biWidth = win->get_width();
-            bmi.bmiHeader.biHeight = -win->get_height();
-            bmi.bmiHeader.biPlanes = 1;
-            bmi.bmiHeader.biBitCount = 32;
-            bmi.bmiHeader.biCompression = BI_RGB;
-
-            StretchDIBits(hdc, 
-                          0, 
-                          0, 
-                          win->get_width(), 
-                          win->get_height(), 
-                          0, 
-                          0, 
-                          win->get_width(), 
-                          win->get_height(), 
-                          &win->get_front_buf().at(0),
-                          &bmi, 
-                          DIB_RGB_COLORS, 
-                          SRCCOPY);
-        }
-        else {
-            FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
-        }
-
-        EndPaint(hwnd, &ps);
-        return 0;
-
-        /*case WM_SIZE:
-            if (win && win->onResize) {
-                win->onResize(LOWORD(lParam), HIWORD(lParam), win->userData);
+        case WM_CLOSE: {
+            if (win) {
+                win->set_should_close(true);
             }
-            return 0;*/
+            return 0;
+        }
+
+        case WM_PAINT: {
+            PAINTSTRUCT ps;
+            HDC hdc = BeginPaint(hwnd, &ps);
+
+            if (win) {
+                HDC bitmap_hdc = CreateCompatibleDC(hdc);
+                HGDIOBJ old_bitmap = SelectObject(bitmap_hdc, win->bitmap);
+
+                /*if (win->is_transparent()) {
+                    BLENDFUNCTION blend{0};
+                    blend.BlendOp = AC_SRC_OVER;
+                    blend.SourceConstantAlpha = 100;
+                    blend.AlphaFormat = AC_SRC_ALPHA;
+
+                    POINT src_point{0, 0};
+                    SIZE window_size{win->get_width(), win->get_height()};
+
+                    UpdateLayeredWindow(hwnd,
+                                        GetDC(NULL),
+                                        &src_point,
+                                        &window_size,
+                                        bitmap_hdc,
+                                        &src_point,
+                                        RGB(0, 0, 0),
+                                        &blend,
+                                        ULW_ALPHA);
+                }*/
+
+                BitBlt(hdc,
+                       0,
+                       0,
+                       win->get_width(),
+                       win->get_height(),
+                       bitmap_hdc,
+                       0,
+                       0,
+                       SRCCOPY);
+
+                SelectObject(hdc, old_bitmap);
+                DeleteDC(bitmap_hdc);
+            }
+            else {
+                FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
+            }
+
+            EndPaint(hwnd, &ps);
+            return 0;
+        }
     }
 
     return DefWindowProc(hwnd, u_msg, w_param, l_param);

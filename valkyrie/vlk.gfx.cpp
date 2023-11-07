@@ -62,17 +62,17 @@ line3d_stepper::line3d_stepper(line3d line, calc_steps_based_on line_type) {
 
     // Calculate steps (total number of increments).
     switch (line_type) {
-    case calc_steps_based_on::largest_difference:
-        steps = static_cast<i32>(std::max(std::abs(difference.x()), std::abs(difference.y())));
-        break;
+        case calc_steps_based_on::largest_difference:
+            steps = static_cast<i32>(std::max(std::abs(difference.x()), std::abs(difference.y())));
+            break;
 
-    case calc_steps_based_on::x_difference:
-        steps = static_cast<i32>(std::abs(difference.x()));
-        break;
+        case calc_steps_based_on::x_difference:
+            steps = static_cast<i32>(std::abs(difference.x()));
+            break;
 
-    case calc_steps_based_on::y_difference:
-        steps = static_cast<i32>(std::abs(difference.y()));
-        break;
+        case calc_steps_based_on::y_difference:
+            steps = static_cast<i32>(std::abs(difference.y()));
+            break;
     }
 
     if (steps == 0) {
@@ -114,12 +114,12 @@ bool line3d_stepper::step() {
     return true;
 }
 
-color_rgb vlk::default_color_blend(const color_rgb& old_color,
-                                   const color_rgba& new_color) {
+color_rgba vlk::default_color_blend(const color_rgba& old_color,
+                                    const color_rgba& new_color) {
     // TODO: find fast way to calculate:
     // new_color.rgb * new_color.a + old_color * (1 - new_color.a)
 
-    return {new_color.r, new_color.g, new_color.b};
+    return new_color;
 }
 
 std::vector<vertex> triangle_clip_component(const std::vector<vertex>& vertices, u8 component_idx) {
@@ -151,7 +151,7 @@ std::vector<vertex> triangle_clip_component(const std::vector<vertex>& vertices,
         }
 
         return result;
-    };
+        };
 
     std::vector<vertex> result = clip(vertices, 1.0f);
     if (result.empty()) {
@@ -216,9 +216,9 @@ void raster_triangle_scanline(const render_triangle_params& params,
                 assert(x >= 0 && x < params.color_buf->get().get_width() &&
                        y >= 0 && y < params.color_buf->get().get_height());
 
-                color_rgb& dest = params.color_buf->get().at(x, y);
+                color_rgba& dest = params.color_buf->get().at(x, y);
 
-                color_rgb old_color = dest;
+                color_rgba old_color = dest;
                 color_rgba new_color = params.pixel_shader(line_x.current);
 
                 dest = params.color_blend(old_color, new_color);
@@ -258,61 +258,61 @@ void fill_triangle(const render_triangle_params& params) {
                 static_cast<i32>(params.depth_buf->get().get_height())
             };
         }
-    }();
+        }();
 
-    // Viewport transformation. 
-    // Convert [-1, 1] to framebuffer size.
-    // Round to nearest pixel pos.
-    for (auto& vertex : vertices) {
-        auto& pos = vertex.pos;
+        // Viewport transformation. 
+        // Convert [-1, 1] to framebuffer size.
+        // Round to nearest pixel pos.
+        for (auto& vertex : vertices) {
+            auto& pos = vertex.pos;
 
-        pos.x() = std::round((pos.x() + 1.0f) / 2.0f * (static_cast<f32>(framebuffer_size.x()) - 1.0f));
-        pos.y() = std::round((pos.y() + 1.0f) / 2.0f * (static_cast<f32>(framebuffer_size.y()) - 1.0f));
-    }
+            pos.x() = std::round((pos.x() + 1.0f) / 2.0f * (static_cast<f32>(framebuffer_size.x()) - 1.0f));
+            pos.y() = std::round((pos.y() + 1.0f) / 2.0f * (static_cast<f32>(framebuffer_size.y()) - 1.0f));
+        }
 
-    // Position aliases.
-    vec4f& p0 = vertices[0].pos;
-    vec4f& p1 = vertices[1].pos;
-    vec4f& p2 = vertices[2].pos;
+        // Position aliases.
+        vec4f& p0 = vertices[0].pos;
+        vec4f& p1 = vertices[1].pos;
+        vec4f& p2 = vertices[2].pos;
 
-    // Sort vertices by Y.
-    if (p0.y() > p1.y()) {
-        std::swap(vertices[0], vertices[1]);
-    }
-    if (p0.y() > p2.y()) {
-        std::swap(vertices[0], vertices[2]);
-    }
-    if (p1.y() > p2.y()) {
-        std::swap(vertices[1], vertices[2]);
-    }
+        // Sort vertices by Y.
+        if (p0.y() > p1.y()) {
+            std::swap(vertices[0], vertices[1]);
+        }
+        if (p0.y() > p2.y()) {
+            std::swap(vertices[0], vertices[2]);
+        }
+        if (p1.y() > p2.y()) {
+            std::swap(vertices[1], vertices[2]);
+        }
 
-    // Check if the top of the triangle is flat.
-    if (p0.y() == p1.y()) {
-        raster_triangle_scanline(params,
-                                 line3d{vertices[0], vertices[2]},
-                                 line3d{vertices[1], vertices[2]});
-    }
-    // Check if the bottom is flat.
-    else if (p1.y() == p2.y()) {
-        raster_triangle_scanline(params,
-                                 line3d{vertices[0], vertices[1]},
-                                 line3d{vertices[0], vertices[2]});
-    }
-    // Else split into two smaller triangles.
-    else {
-        float lerp_amount = (p1.y() - p0.y()) / (p2.y() - p0.y());
-        vertex vertex3 = vertices[0].lerp(vertices[2], lerp_amount);
+        // Check if the top of the triangle is flat.
+        if (p0.y() == p1.y()) {
+            raster_triangle_scanline(params,
+                                     line3d{vertices[0], vertices[2]},
+                                     line3d{vertices[1], vertices[2]});
+        }
+        // Check if the bottom is flat.
+        else if (p1.y() == p2.y()) {
+            raster_triangle_scanline(params,
+                                     line3d{vertices[0], vertices[1]},
+                                     line3d{vertices[0], vertices[2]});
+        }
+        // Else split into two smaller triangles.
+        else {
+            float lerp_amount = (p1.y() - p0.y()) / (p2.y() - p0.y());
+            vertex vertex3 = vertices[0].lerp(vertices[2], lerp_amount);
 
-        // Top (flat bottom).
-        raster_triangle_scanline(params,
-                                 line3d{vertices[0], vertices[1]},
-                                 line3d{vertices[0], vertex3});
+            // Top (flat bottom).
+            raster_triangle_scanline(params,
+                                     line3d{vertices[0], vertices[1]},
+                                     line3d{vertices[0], vertex3});
 
-        // Bottom (flat top).
-        raster_triangle_scanline(params,
-                                 line3d{vertices[1], vertices[2]},
-                                 line3d{vertex3, vertices[2]});
-    }
+            // Bottom (flat top).
+            raster_triangle_scanline(params,
+                                     line3d{vertices[1], vertices[2]},
+                                     line3d{vertex3, vertices[2]});
+        }
 }
 
 void vlk::render_triangle(const render_triangle_params& params) {
@@ -324,7 +324,7 @@ void vlk::render_triangle(const render_triangle_params& params) {
             p.x() >= -p.w() && p.x() <= p.w() &&
             p.y() >= -p.w() && p.y() <= p.w() &&
             p.z() >= -p.w() && p.z() <= p.w();
-    };
+        };
 
     // Position aliases.
     const vec4f& p0 = params.vertices[0].pos;
@@ -359,12 +359,12 @@ void vlk::render_triangle(const render_triangle_params& params) {
 }
 
 std::vector<std::byte>::iterator image::at(size_t x, size_t y) {
-    assert(x >= 0 && x < width&& y >= 0 && y < height);
+    assert(x >= 0 && x < width && y >= 0 && y < height);
     return data.begin() + (y * width + x) * channels;
 }
 
 std::vector<std::byte>::const_iterator image::at(size_t x, size_t y) const {
-    assert(x >= 0 && x < width&& y >= 0 && y < height);
+    assert(x >= 0 && x < width && y >= 0 && y < height);
     return data.begin() + (y * width + x) * channels;
 }
 

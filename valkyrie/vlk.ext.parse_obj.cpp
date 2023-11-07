@@ -8,6 +8,7 @@
 #include <sstream>
 #include <format>
 #include <filesystem>
+#include <stdexcept>
 
 #include "vlk.util.hpp"
 

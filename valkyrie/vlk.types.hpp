@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <bit>
 
 static_assert(std::endian::native == std::endian::little);
 static_assert(sizeof(int) == 4);

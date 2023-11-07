@@ -1,9 +1,15 @@
 #pragma once
 
-#if defined(_WIN32) || defined(_WIN64)
-#include <Windows.h>
+#if defined(_WIN32) || defined(_WIN64) || defined(WIN32) || defined(WIN64)
+#define WINDOWS
 #else
 #error "Unsupported system."
+#endif
+
+#ifdef WINDOWS
+#include <windows.h>
+#include <dwmapi.h>
+#pragma comment(lib, "dwmapi")
 #endif
 #include <string>
 #include <vector>
@@ -19,9 +25,25 @@ namespace vlk {
     f64 get_elapsed_time();
     i64 get_ticks_per_sec();
 
+    struct window_params {
+        std::string_view title;
+        i32 width;
+        i32 height;
+        bool default_ui = true;
+        bool transparent = false;
+    };
+
     class window {
     public:
-        window(const std::string& title, i32 width, i32 height);
+#ifdef WINDOWS
+        HWND hwnd;
+        // Raw pointer array because we need a consistent memory address.
+        u32* pixels;
+        // A handle to the window background bitmap.
+        HBITMAP bitmap;
+#endif
+
+        window(const window_params& params);
 
         void poll_events();
         void swap_buffers(const color_buffer& color_buf);
@@ -32,15 +54,14 @@ namespace vlk {
         i32 get_width() const;
         i32 get_height() const;
 
-        const std::vector<u32>& get_front_buf() const;
+        bool is_transparent() const;
 
     private:
-        HWND hwnd;
         bool should_close;
 
         i32 width;
         i32 height;
 
-        std::vector<u32> front_buf;
+        bool transparent;
     };
 }

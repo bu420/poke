@@ -13,11 +13,12 @@ std::vector<std::string> vlk::string_split(const std::string& source,
 
     std::vector<std::string> tokens;
 
-    auto pos{source.begin()};
-    const auto end{source.end()};
+    auto pos = source.begin();
+    const auto end = source.end();
 
     while (true) {
-        const auto next_separator_pos = std::find_first_of(pos, end, separator.begin(), separator.end());
+        const auto next_separator_pos = 
+            std::find_first_of(pos, end, separator.begin(), separator.end());
 
         if (allow_empty_substrings or (not allow_empty_substrings and pos != next_separator_pos)) {
             tokens.push_back(std::string{pos, next_separator_pos});

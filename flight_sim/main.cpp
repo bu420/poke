@@ -2,7 +2,6 @@
 #include <valkyrie/vlk.gfx.hpp>
 #include <valkyrie/vlk.system.hpp>
 #include <valkyrie/vlk.ext.parse_obj.hpp>
-
 #include <numbers>
 #include <algorithm>
 #include <print>
@@ -15,8 +14,6 @@ int main() {
     const size_t height{600};
 
     initialize();
-
-    std::print("Working directory : {}\n", std::filesystem::current_path().string());
 
     model model;
     try {
