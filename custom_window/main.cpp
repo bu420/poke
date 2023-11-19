@@ -21,15 +21,26 @@ int main() {
     while (!win.get_should_close()) {
         win.poll_events();
 
+        std::array vertices{
+            vertex{{-0.5f, -0.5f, 0.0f, 1.0f}},
+            vertex{{0.5f, -0.5f, 0.0f, 1.0f}},
+            vertex{{0.0f, 0.5f, 0.0f, 1.0f}}
+        };
+
+        /*const auto transformation_matrix =
+            mat4{1.0f}.rotate_z(static_cast<f32>(std::sin(get_elapsed_time() / 500) * 8));
+
+        for (auto& vertex : vertices) {
+            vertex.pos *= transformation_matrix;
+        }*/
+
         color_buf.clear({0, 0, 0, 0});
 
-        render_triangle({.vertices = {
-                             vertex{{-0.5f, -0.5f, 0.0f, 1.0f}},
-                             vertex{{0.5f, -0.5f, 0.0f, 1.0f}},
-                             vertex{{0.0f, 0.5f, 0.0f, 1.0f}}
-                         },
+        render_triangle({.vertices = vertices,
                          .color_buf = color_buf,
-                         .pixel_shader = [](const vertex&) { return color_rgba{255, 0, 0, 255}; }});
+                         .pixel_shader = [](const vertex&) {
+                             return color_rgba{255, 0, 0, 255};
+                         }});
 
         win.swap_buffers(color_buf);
     }

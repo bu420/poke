@@ -34,6 +34,10 @@ i64 vlk::get_ticks_per_sec() {
     return ticks_per_second.QuadPart;
 }
 
+image vlk::load_image(std::string_view path) {
+    return image{};
+}
+
 window::window(const window_params& params) :
     should_close{false},
     width{params.width},
@@ -76,12 +80,13 @@ window::window(const window_params& params) :
     if (transparent) {
         SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
 
+        HRGN region = CreateRectRgn(0, 0, -1, -1);
         DWM_BLURBEHIND bb = {0};
-        HRGN hRgn = CreateRectRgn(0, 0, -1, -1);
         bb.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION;
-        bb.hRgnBlur = hRgn;
+        bb.hRgnBlur = region;
         bb.fEnable = TRUE;
         DwmEnableBlurBehindWindow(hwnd, &bb);
+        DeleteObject(region);
     }
 
     this->hwnd = hwnd;
@@ -185,10 +190,40 @@ LRESULT CALLBACK win_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param)
                 HDC bitmap_hdc = CreateCompatibleDC(hdc);
                 HGDIOBJ old_bitmap = SelectObject(bitmap_hdc, win->bitmap);
 
+                BitBlt(hdc,
+                       0,
+                       0,
+                       win->get_width(),
+                       win->get_height(),
+                       bitmap_hdc,
+                       0,
+                       0,
+                       SRCCOPY);
+
+                /*BLENDFUNCTION blend{0};
+                blend.BlendOp = AC_SRC_OVER;
+                blend.SourceConstantAlpha = 255;
+                blend.AlphaFormat = AC_SRC_ALPHA;
+
+                AlphaBlend(hdc,
+                           0,
+                           0,
+                           win->get_width(),
+                           win->get_height(),
+                           bitmap_hdc,
+                           0,
+                           0,
+                           win->get_width(),
+                           win->get_height(),
+                           blend);*/
+
+                SelectObject(hdc, old_bitmap);
+                DeleteDC(bitmap_hdc);
+
                 /*if (win->is_transparent()) {
                     BLENDFUNCTION blend{0};
                     blend.BlendOp = AC_SRC_OVER;
-                    blend.SourceConstantAlpha = 100;
+                    blend.SourceConstantAlpha = 255;
                     blend.AlphaFormat = AC_SRC_ALPHA;
 
                     POINT src_point{0, 0};
@@ -204,19 +239,6 @@ LRESULT CALLBACK win_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param)
                                         &blend,
                                         ULW_ALPHA);
                 }*/
-
-                BitBlt(hdc,
-                       0,
-                       0,
-                       win->get_width(),
-                       win->get_height(),
-                       bitmap_hdc,
-                       0,
-                       0,
-                       SRCCOPY);
-
-                SelectObject(hdc, old_bitmap);
-                DeleteDC(bitmap_hdc);
             }
             else {
                 FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
@@ -225,6 +247,11 @@ LRESULT CALLBACK win_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param)
             EndPaint(hwnd, &ps);
             return 0;
         }
+
+        /*case WM_NCHITTEST: {
+            printf("yo\n");
+            return HTTRANSPARENT;
+        }*/
     }
 
     return DefWindowProc(hwnd, u_msg, w_param, l_param);

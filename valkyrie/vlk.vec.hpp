@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cmath>
 #include <cassert>
 
@@ -12,7 +13,7 @@ namespace vlk {
     template <typename T>
     class vec2 {
     private:
-        T arr[2] = {};
+        std::array<T, 2> arr;
 
     public:
         vec2() = default;
@@ -85,7 +86,7 @@ namespace vlk {
     template <typename T>
     class vec3 {
     private:
-        T arr[3];
+        std::array<T, 3> arr;
 
     public:
         vec3() = default;
@@ -212,7 +213,7 @@ namespace vlk {
     template <typename T>
     class vec4 {
     private:
-        T arr[4] = {};
+        std::array<T, 4> arr;
 
     public:
         vec4() = default;

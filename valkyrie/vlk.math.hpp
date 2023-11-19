@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include "vlk.vec.hpp"
 
 namespace vlk {
@@ -14,7 +16,7 @@ namespace vlk {
         const vec3f& operator [] (u8 x) const;
 
     private:
-        vec3f m[3];
+        std::array<vec3f, 3> m;
     };
 
     class mat4 {
@@ -38,7 +40,7 @@ namespace vlk {
         vec4f operator * (const vec4f& v) const;
 
     private:
-        vec4f m[4];
+        std::array<vec4f, 4> m;
     };
 
     mat4 look_at(vec3f pos, vec3f target, vec3f up);
