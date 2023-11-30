@@ -7,7 +7,7 @@
 
 using namespace vlk;
 
-attribute attribute::lerp(const attribute& other, f32 amount) const {
+attribute attribute::lerp(const attribute &other, f32 amount) const {
     assert(this->size == other.size);
 
     attribute result;
@@ -20,7 +20,7 @@ attribute attribute::lerp(const attribute& other, f32 amount) const {
     return result;
 }
 
-void attribute::operator += (const attribute& a) {
+void attribute::operator += (const attribute &a) {
     assert(size == a.size);
 
     for (u8 i{0}; i < size; ++i) {
@@ -28,7 +28,7 @@ void attribute::operator += (const attribute& a) {
     }
 }
 
-vertex vertex::lerp(const vertex& other, f32 amount) const {
+vertex vertex::lerp(const vertex &other, f32 amount) const {
     assert(attribute_count == other.attribute_count);
 
     vertex result;
@@ -114,22 +114,22 @@ bool line3d_stepper::step() {
     return true;
 }
 
-color_rgba vlk::default_color_blend(const color_rgba& old_color,
-                                    const color_rgba& new_color) {
+color_rgba vlk::default_color_blend(const color_rgba &old_color,
+                                    const color_rgba &new_color) {
     // TODO: find fast way to calculate:
     // new_color.rgb * new_color.a + old_color * (1 - new_color.a)
 
     return new_color;
 }
 
-std::vector<vertex> triangle_clip_component(const std::vector<vertex>& vertices, u8 component_idx) {
-    auto clip = [&](const std::vector<vertex>& vertices, f32 sign) {
+std::vector<vertex> triangle_clip_component(const std::vector<vertex> &vertices, u8 component_idx) {
+    auto clip = [&](const std::vector<vertex> &vertices, f32 sign) {
         std::vector<vertex> result;
         result.reserve(vertices.size());
 
         for (size_t i{0}; i < vertices.size(); ++i) {
-            const vertex& curr_vertex = vertices[i];
-            const vertex& prev_vertex = vertices[(i - 1 + vertices.size()) % vertices.size()];
+            const vertex &curr_vertex = vertices[i];
+            const vertex &prev_vertex = vertices[(i - 1 + vertices.size()) % vertices.size()];
 
             f32 curr_component = sign * curr_vertex.pos[component_idx];
             f32 prev_component = sign * prev_vertex.pos[component_idx];
@@ -151,7 +151,7 @@ std::vector<vertex> triangle_clip_component(const std::vector<vertex>& vertices,
         }
 
         return result;
-        };
+    };
 
     std::vector<vertex> result = clip(vertices, 1.0f);
     if (result.empty()) {
@@ -160,7 +160,7 @@ std::vector<vertex> triangle_clip_component(const std::vector<vertex>& vertices,
     return clip(result, -1.0f);
 }
 
-std::vector<vertex> triangle_clip(const std::array<vertex, 3>& vertices) {
+std::vector<vertex> triangle_clip(const std::array<vertex, 3> &vertices) {
     // Clip X.
     std::vector<vertex> result = triangle_clip_component({vertices.begin(), vertices.end()}, 0);
     if (result.empty()) {
@@ -176,7 +176,7 @@ std::vector<vertex> triangle_clip(const std::array<vertex, 3>& vertices) {
     return result;
 }
 
-void raster_triangle_scanline(const render_triangle_params& params,
+void raster_triangle_scanline(const render_triangle_params &params,
                               line3d a,
                               line3d b) {
     // Sort lines based on X.
@@ -200,7 +200,7 @@ void raster_triangle_scanline(const render_triangle_params& params,
                 assert(x >= 0 && x < params.depth_buf->get().get_width() &&
                        y >= 0 && y < params.depth_buf->get().get_height());
 
-                f32& depth_buf_z = params.depth_buf->get().at(x, y);
+                f32 &depth_buf_z = params.depth_buf->get().at(x, y);
                 f32 current_z = line_x.current.pos.z();
 
                 if (current_z < depth_buf_z) {
@@ -216,7 +216,7 @@ void raster_triangle_scanline(const render_triangle_params& params,
                 assert(x >= 0 && x < params.color_buf->get().get_width() &&
                        y >= 0 && y < params.color_buf->get().get_height());
 
-                color_rgba& dest = params.color_buf->get().at(x, y);
+                color_rgba &dest = params.color_buf->get().at(x, y);
 
                 color_rgba old_color = dest;
                 color_rgba new_color = params.pixel_shader(line_x.current);
@@ -230,13 +230,13 @@ void raster_triangle_scanline(const render_triangle_params& params,
 }
 
 // This function assumes that the entire triangle is visible.
-void fill_triangle(const render_triangle_params& params) {
+void fill_triangle(const render_triangle_params &params) {
     // Make a modifiable copy of the vertices.
     std::array<vertex, 3> vertices = params.vertices;
 
     // W division (homogeneous clip space -> NDC space).
-    for (auto& vertex : vertices) {
-        auto& pos = vertex.pos;
+    for (auto &vertex : vertices) {
+        auto &pos = vertex.pos;
 
         assert(pos.w() != 0);
 
@@ -258,78 +258,78 @@ void fill_triangle(const render_triangle_params& params) {
                 static_cast<i32>(params.depth_buf->get().get_height())
             };
         }
-        }();
+    }();
 
-        // Viewport transformation. 
-        // Convert [-1, 1] to framebuffer size.
-        // Round to nearest pixel pos.
-        for (auto& vertex : vertices) {
-            auto& pos = vertex.pos;
+    // Viewport transformation. 
+    // Convert [-1, 1] to framebuffer size.
+    // Round to nearest pixel pos.
+    for (auto &vertex : vertices) {
+        auto &pos = vertex.pos;
 
-            pos.x() = std::round((pos.x() + 1.0f) / 2.0f * (static_cast<f32>(framebuffer_size.x()) - 1.0f));
-            pos.y() = std::round((pos.y() + 1.0f) / 2.0f * (static_cast<f32>(framebuffer_size.y()) - 1.0f));
-        }
+        pos.x() = std::round((pos.x() + 1.0f) / 2.0f * (static_cast<f32>(framebuffer_size.x()) - 1.0f));
+        pos.y() = std::round((pos.y() + 1.0f) / 2.0f * (static_cast<f32>(framebuffer_size.y()) - 1.0f));
+    }
 
-        // Position aliases.
-        vec4f& p0 = vertices[0].pos;
-        vec4f& p1 = vertices[1].pos;
-        vec4f& p2 = vertices[2].pos;
+    // Position aliases.
+    vec4f &p0 = vertices[0].pos;
+    vec4f &p1 = vertices[1].pos;
+    vec4f &p2 = vertices[2].pos;
 
-        // Sort vertices by Y.
-        if (p0.y() > p1.y()) {
-            std::swap(vertices[0], vertices[1]);
-        }
-        if (p0.y() > p2.y()) {
-            std::swap(vertices[0], vertices[2]);
-        }
-        if (p1.y() > p2.y()) {
-            std::swap(vertices[1], vertices[2]);
-        }
+    // Sort vertices by Y.
+    if (p0.y() > p1.y()) {
+        std::swap(vertices[0], vertices[1]);
+    }
+    if (p0.y() > p2.y()) {
+        std::swap(vertices[0], vertices[2]);
+    }
+    if (p1.y() > p2.y()) {
+        std::swap(vertices[1], vertices[2]);
+    }
 
-        // Check if the top of the triangle is flat.
-        if (p0.y() == p1.y()) {
-            raster_triangle_scanline(params,
-                                     line3d{vertices[0], vertices[2]},
-                                     line3d{vertices[1], vertices[2]});
-        }
-        // Check if the bottom is flat.
-        else if (p1.y() == p2.y()) {
-            raster_triangle_scanline(params,
-                                     line3d{vertices[0], vertices[1]},
-                                     line3d{vertices[0], vertices[2]});
-        }
-        // Else split into two smaller triangles.
-        else {
-            float lerp_amount = (p1.y() - p0.y()) / (p2.y() - p0.y());
-            vertex vertex3 = vertices[0].lerp(vertices[2], lerp_amount);
+    // Check if the top of the triangle is flat.
+    if (p0.y() == p1.y()) {
+        raster_triangle_scanline(params,
+                                 line3d{vertices[0], vertices[2]},
+                                 line3d{vertices[1], vertices[2]});
+    }
+    // Check if the bottom is flat.
+    else if (p1.y() == p2.y()) {
+        raster_triangle_scanline(params,
+                                 line3d{vertices[0], vertices[1]},
+                                 line3d{vertices[0], vertices[2]});
+    }
+    // Else split into two smaller triangles.
+    else {
+        float lerp_amount = (p1.y() - p0.y()) / (p2.y() - p0.y());
+        vertex vertex3 = vertices[0].lerp(vertices[2], lerp_amount);
 
-            // Top (flat bottom).
-            raster_triangle_scanline(params,
-                                     line3d{vertices[0], vertices[1]},
-                                     line3d{vertices[0], vertex3});
+        // Top (flat bottom).
+        raster_triangle_scanline(params,
+                                 line3d{vertices[0], vertices[1]},
+                                 line3d{vertices[0], vertex3});
 
-            // Bottom (flat top).
-            raster_triangle_scanline(params,
-                                     line3d{vertices[1], vertices[2]},
-                                     line3d{vertex3, vertices[2]});
-        }
+        // Bottom (flat top).
+        raster_triangle_scanline(params,
+                                 line3d{vertices[1], vertices[2]},
+                                 line3d{vertex3, vertices[2]});
+    }
 }
 
-void vlk::render_triangle(const render_triangle_params& params) {
+void vlk::render_triangle(const render_triangle_params &params) {
     assert(params.color_buf || params.depth_buf &&
            "Either a color buffer, depth buffer or both must be present.");
 
-    auto is_point_visible = [](const vec4f& p) {
+    auto is_point_visible = [](const vec4f &p) {
         return
             p.x() >= -p.w() && p.x() <= p.w() &&
             p.y() >= -p.w() && p.y() <= p.w() &&
             p.z() >= -p.w() && p.z() <= p.w();
-        };
+    };
 
     // Position aliases.
-    const vec4f& p0 = params.vertices[0].pos;
-    const vec4f& p1 = params.vertices[1].pos;
-    const vec4f& p2 = params.vertices[2].pos;
+    const vec4f &p0 = params.vertices[0].pos;
+    const vec4f &p1 = params.vertices[1].pos;
+    const vec4f &p2 = params.vertices[2].pos;
 
     bool is_p0_visible = is_point_visible(p0);
     bool is_p1_visible = is_point_visible(p1);
@@ -358,34 +358,40 @@ void vlk::render_triangle(const render_triangle_params& params) {
     }
 }
 
-std::vector<std::byte>::iterator image::at(size_t x, size_t y) {
+std::vector<u8>::iterator image::at(size_t x, size_t y) {
     assert(x >= 0 && x < width && y >= 0 && y < height);
     return data.begin() + (y * width + x) * channels;
 }
 
-std::vector<std::byte>::const_iterator image::at(size_t x, size_t y) const {
+std::vector<u8>::const_iterator image::at(size_t x, size_t y) const {
     assert(x >= 0 && x < width && y >= 0 && y < height);
     return data.begin() + (y * width + x) * channels;
 }
 
-std::vector<std::byte>::iterator image::sample(f32 x, f32 y) {
+std::vector<u8>::iterator image::sample(f32 x, f32 y) {
     return at(static_cast<size_t>(std::round(x * (static_cast<f32>(width) - 1))),
               static_cast<size_t>(std::round(y * (static_cast<f32>(height) - 1))));
 }
 
-std::vector<std::byte>::const_iterator image::sample(f32 x, f32 y) const {
+std::vector<u8>::const_iterator image::sample(f32 x, f32 y) const {
     return at(static_cast<size_t>(std::round(x * (static_cast<f32>(width) - 1))),
               static_cast<size_t>(std::round(y * (static_cast<f32>(height) - 1))));
 }
 
-color_rgba vlk::default_model_pixel_shader(const vertex& vertex,
-                                           const model& model,
-                                           const model::material& material) {
+color_rgba vlk::default_model_pixel_shader(const vertex &vertex,
+                                           const model &model,
+                                           size_t material_index) {
     vec2f tex_coord = vertex.attributes[0].data.xy();
 
     color_rgba result{255, 0, 255, 255};
 
-    if (material.albedo_map_index != model::invalid_index) {
+    if (material_index == model::no_index) {
+        return result;
+    }
+
+    const model::material &material = model.materials[material_index];
+
+    if (material.albedo_map_index != model::no_index) {
         auto pixel = model.images[material.albedo_map_index].sample(tex_coord.x(), tex_coord.y());
         result.r = static_cast<u8>(*pixel);
         result.g = static_cast<u8>(*(pixel + 1));
@@ -393,7 +399,7 @@ color_rgba vlk::default_model_pixel_shader(const vertex& vertex,
         result.a = static_cast<u8>(*(pixel + 3));
     }
 
-    if (material.normal_map_index != model::invalid_index) {
+    if (material.normal_map_index != model::no_index) {
         auto pixel = model.images[material.normal_map_index].sample(tex_coord.x(), tex_coord.y());
         result.r += static_cast<u8>(*pixel);
         result.g += static_cast<u8>(*(pixel + 1));
@@ -403,19 +409,23 @@ color_rgba vlk::default_model_pixel_shader(const vertex& vertex,
     return result;
 }
 
-void vlk::render_model(const render_model_params& params) {
-    for (auto& mesh : params.model.meshes) {
-        for (auto& face : mesh.faces) {
+void vlk::render_model(const render_model_params &params) {
+    for (auto &mesh : params.model.meshes) {
+        for (auto &face : mesh.faces) {
             std::array<vertex, 3> vertices{
-                vertex{vec4f{params.model.positions[face.position_indices[0]], 1.0f} *params.mvp_matrix},
-                vertex{vec4f{params.model.positions[face.position_indices[1]], 1.0f} *params.mvp_matrix},
-                vertex{vec4f{params.model.positions[face.position_indices[2]], 1.0f} *params.mvp_matrix}
+                vertex{{params.model.positions[face.position_indices[0]], 1.0f}},
+                vertex{{params.model.positions[face.position_indices[1]], 1.0f}},
+                vertex{{params.model.positions[face.position_indices[2]], 1.0f}}
             };
 
+            for (auto &vertex : vertices) {
+                vertex.pos *= params.mvp_matrix;
+            }
+
             if (mesh.has_tex_coords) {
-                for (u8 i{0}; i < 3; ++i) {
-                    attribute& attrib = vertices[i].attributes[vertices[i].attribute_count++];
-                    const vec2f& tex_coord = params.model.tex_coords[face.tex_coord_indices[i]];
+                for (u8 i = 0; i < 3; ++i) {
+                    attribute &attrib = vertices[i].attributes[vertices[i].attribute_count++];
+                    const vec2f &tex_coord = params.model.tex_coords[face.tex_coord_indices[i]];
 
                     attrib.data.x() = tex_coord.x();
                     attrib.data.y() = tex_coord.y();
@@ -423,9 +433,9 @@ void vlk::render_model(const render_model_params& params) {
                 }
             }
             if (mesh.has_normals) {
-                for (u8 i{0}; i < 3; ++i) {
-                    attribute& attrib = vertices[i].attributes[vertices[i].attribute_count++];
-                    const vec3f& normal = params.model.normals[face.normal_indices[i]] * params.normal_matrix;
+                for (u8 i = 0; i < 3; ++i) {
+                    attribute &attrib = vertices[i].attributes[vertices[i].attribute_count++];
+                    const vec3f &normal = params.model.normals[face.normal_indices[i]] * params.normal_matrix;
 
                     attrib.data.x() = normal.x();
                     attrib.data.y() = normal.y();
@@ -434,18 +444,12 @@ void vlk::render_model(const render_model_params& params) {
                 }
             }
 
-            const render_triangle_params triangle_params{
-                .vertices{vertices},
-                .color_buf{params.color_buf},
-                .depth_buf{params.depth_buf},
-                .pixel_shader{
-                    [&](const vertex& vertex) {
-                        return params.pixel_shader(vertex, params.model, params.model.materials[mesh.material_index]);
-                    }
-                }
-            };
-
-            render_triangle(triangle_params);
+            render_triangle({.vertices = vertices,
+                             .color_buf = params.color_buf,
+                             .depth_buf = params.depth_buf,
+                             .pixel_shader = [&](const vertex &vertex) {
+                                 return params.pixel_shader(vertex, params.model, mesh.material_index);
+                             }});
         }
     }
 }

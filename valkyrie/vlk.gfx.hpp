@@ -146,14 +146,14 @@ namespace vlk {
     struct image {
         size_t width;
         size_t height;
-        u8 channels;
-        std::vector<std::byte> data;
+        size_t channels;
+        std::vector<u8> data;
 
-        std::vector<std::byte>::iterator at(size_t x, size_t y);
-        std::vector<std::byte>::const_iterator at(size_t x, size_t y) const;
+        std::vector<u8>::iterator at(size_t x, size_t y);
+        std::vector<u8>::const_iterator at(size_t x, size_t y) const;
 
-        std::vector<std::byte>::iterator sample(f32 x, f32 y);
-        std::vector<std::byte>::const_iterator sample(f32 x, f32 y) const;
+        std::vector<u8>::iterator sample(f32 x, f32 y);
+        std::vector<u8>::const_iterator sample(f32 x, f32 y) const;
     };
 
     struct model {
@@ -190,16 +190,16 @@ namespace vlk {
         std::vector<material> materials;
         std::vector<image> images;
 
-        static constexpr size_t invalid_index = (size_t)-1;
+        static constexpr size_t no_index = static_cast<size_t>(-1);
     };
 
     using model_pixel_shader_func = std::function<color_rgba(const vertex&,
                                                              const model&,
-                                                             const model::material&)>;
+                                                             size_t material_index)>;
 
     color_rgba default_model_pixel_shader(const vertex& vertex,
                                           const model& model,
-                                          const model::material& material);
+                                          size_t material_index);
 
     struct render_model_params {
         model model;

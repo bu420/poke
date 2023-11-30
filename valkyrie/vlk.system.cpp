@@ -1,7 +1,13 @@
 #include "vlk.system.hpp"
 
+#define GDIPVER 0x0110
+#include <gdiplus.h>
+#pragma comment(lib, "gdiplus")
 #include <cassert>
 #include <stdexcept>
+#include <algorithm>
+
+#include "vlk.util.hpp"
 
 using namespace vlk;
 
@@ -15,8 +21,14 @@ void vlk::initialize() {
     wc.hInstance = GetModuleHandle(0);
     wc.lpszClassName = vlk_window_class_name;
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-    wc.cbWndExtra = sizeof(window*);
+    wc.cbWndExtra = sizeof(window *);
     RegisterClass(&wc);
+
+    // Kept here until we need it outside this function...
+    ULONG_PTR m_gdiplusToken;
+
+    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+    Gdiplus::GdiplusStartup(&m_gdiplusToken, &gdiplusStartupInput, nullptr);
 }
 
 void vlk::terminate() {
@@ -34,11 +46,56 @@ i64 vlk::get_ticks_per_sec() {
     return ticks_per_second.QuadPart;
 }
 
-image vlk::load_image(std::string_view path) {
-    return image{};
+image vlk::load_image(std::filesystem::path path) {
+    if (not path.is_absolute()) {
+        path = std::filesystem::current_path() / path;
+    }
+
+    auto image = Gdiplus::Bitmap::FromFile(path.wstring().c_str());
+    
+    auto status = image->GetLastStatus();
+
+    if (status == Gdiplus::FileNotFound) {
+        throw std::runtime_error(
+            std::format("Valkyrie: file not found {}.", path.string()));
+    }
+    else if (status != Gdiplus::Ok) {
+        throw std::runtime_error(
+            std::format("Valkyrie: failed to load image {}.", path.string()));
+    }
+
+    
+    if (image->GetPixelFormat() != PixelFormat32bppARGB) {
+        image->ConvertFormat(PixelFormat32bppARGB,
+                             Gdiplus::DitherTypeNone,
+                             Gdiplus::PaletteTypeOptimal,
+                             nullptr,
+                             REAL_MAX);
+    }
+
+    vlk::image result{.width = image->GetWidth(),
+                      .height = image->GetHeight(),
+                      .channels = 4};
+
+    result.data.resize(
+        result.width * result.height * result.channels);
+    
+    for (size_t x = 0; x < image->GetWidth(); ++x) {
+        for (size_t y = 0; y < image->GetHeight(); ++y) {
+            Gdiplus::Color color;
+            image->GetPixel(static_cast<INT>(x), static_cast<INT>(y), &color);
+
+            *(result.at(x, y) + 0) = color.GetR();
+            *(result.at(x, y) + 1) = color.GetG();
+            *(result.at(x, y) + 2) = color.GetB();
+            *(result.at(x, y) + 3) = color.GetA();
+        }
+    }
+
+    return result;
 }
 
-window::window(const window_params& params) :
+window::window(const window_params &params) :
     should_close{false},
     width{params.width},
     height{params.height},
@@ -54,7 +111,7 @@ window::window(const window_params& params) :
         style |= WS_CAPTION | WS_SYSMENU | WS_MAXIMIZEBOX | WS_MINIMIZEBOX | WS_THICKFRAME;
     }
 
-    DWORD ex_style = WS_EX_APPWINDOW | WS_EX_TOPMOST;
+    DWORD ex_style = WS_EX_APPWINDOW; // WS_EX_TOPMOST
 
     if (transparent) {
         ex_style |= WS_EX_LAYERED;
@@ -77,26 +134,14 @@ window::window(const window_params& params) :
         throw std::runtime_error("Valkyrie: failed to create win32 window.");
     }
 
-    if (transparent) {
-        SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA);
-
-        HRGN region = CreateRectRgn(0, 0, -1, -1);
-        DWM_BLURBEHIND bb = {0};
-        bb.dwFlags = DWM_BB_ENABLE | DWM_BB_BLURREGION;
-        bb.hRgnBlur = region;
-        bb.fEnable = TRUE;
-        DwmEnableBlurBehindWindow(hwnd, &bb);
-        DeleteObject(region);
-    }
-
     this->hwnd = hwnd;
     pixels = new u32[width * height];
 
     SetWindowLongPtr(hwnd, 0, (LONG_PTR)this);
 
-    ShowWindow(hwnd, SW_SHOW);
-
     // Create background bitmap.
+
+    HDC hdc = GetDC(hwnd);
 
     BITMAPINFO bmi{0};
     bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
@@ -106,17 +151,17 @@ window::window(const window_params& params) :
     bmi.bmiHeader.biBitCount = 32;
     bmi.bmiHeader.biCompression = BI_RGB;
 
-    HDC screen_hdc = GetDC(NULL);
-
-    bitmap = CreateDIBSection(screen_hdc,
+    bitmap = CreateDIBSection(hdc,
                               &bmi,
                               DIB_RGB_COLORS,
-                              reinterpret_cast<void**>(&pixels),
+                              reinterpret_cast<void **>(&pixels),
                               NULL,
                               NULL);
     assert(bitmap);
 
-    ReleaseDC(NULL, screen_hdc);
+    ReleaseDC(NULL, hdc);
+
+    ShowWindow(hwnd, SW_SHOW);
 }
 
 void window::poll_events() {
@@ -128,7 +173,46 @@ void window::poll_events() {
     }
 }
 
-void window::swap_buffers(const color_buffer& color_buf) {
+void bitmap_blit(const window &window, HDC hdc) {
+    HDC memory_hdc = CreateCompatibleDC(hdc);
+    HGDIOBJ old_bitmap = SelectObject(memory_hdc, window.bitmap);
+
+    BitBlt(hdc,
+           0,
+           0,
+           window.get_width(),
+           window.get_height(),
+           memory_hdc,
+           0,
+           0,
+           SRCCOPY);
+
+    SelectObject(hdc, old_bitmap);
+
+    if (window.is_transparent()) {
+        POINT zero = {0, 0};
+        SIZE size = {window.get_width(), window.get_height()};
+
+        BLENDFUNCTION blend{0};
+        blend.BlendOp = AC_SRC_OVER;
+        blend.SourceConstantAlpha = 255;
+        blend.AlphaFormat = AC_SRC_ALPHA;
+
+        UpdateLayeredWindow(window.hwnd,
+                            hdc,
+                            &zero,
+                            &size,
+                            memory_hdc,
+                            &zero,
+                            0,
+                            &blend,
+                            ULW_ALPHA);
+    }
+
+    DeleteDC(memory_hdc);
+}
+
+void window::swap_buffers(const color_buffer &color_buf) {
     assert(color_buf.get_width() == this->width && color_buf.get_height() == this->height &&
            "Color buffer size does not match window size.");
 
@@ -147,8 +231,13 @@ void window::swap_buffers(const color_buffer& color_buf) {
         }
     }
 
-    // Trigger redraw.
-    InvalidateRect(hwnd, NULL, FALSE);
+    if (not transparent) {
+        // Trigger redraw.
+        InvalidateRect(hwnd, NULL, FALSE);
+    }
+    else {
+        bitmap_blit(*this, GetDC(hwnd));
+    }
 }
 
 bool window::get_should_close() const {
@@ -172,7 +261,7 @@ bool window::is_transparent() const {
 }
 
 LRESULT CALLBACK win_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param) {
-    auto win = reinterpret_cast<window*>(GetWindowLongPtr(hwnd, 0));
+    auto win = reinterpret_cast<window *>(GetWindowLongPtr(hwnd, 0));
 
     switch (u_msg) {
         case WM_CLOSE: {
@@ -187,58 +276,10 @@ LRESULT CALLBACK win_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param)
             HDC hdc = BeginPaint(hwnd, &ps);
 
             if (win) {
-                HDC bitmap_hdc = CreateCompatibleDC(hdc);
-                HGDIOBJ old_bitmap = SelectObject(bitmap_hdc, win->bitmap);
-
-                BitBlt(hdc,
-                       0,
-                       0,
-                       win->get_width(),
-                       win->get_height(),
-                       bitmap_hdc,
-                       0,
-                       0,
-                       SRCCOPY);
-
-                /*BLENDFUNCTION blend{0};
-                blend.BlendOp = AC_SRC_OVER;
-                blend.SourceConstantAlpha = 255;
-                blend.AlphaFormat = AC_SRC_ALPHA;
-
-                AlphaBlend(hdc,
-                           0,
-                           0,
-                           win->get_width(),
-                           win->get_height(),
-                           bitmap_hdc,
-                           0,
-                           0,
-                           win->get_width(),
-                           win->get_height(),
-                           blend);*/
-
-                SelectObject(hdc, old_bitmap);
-                DeleteDC(bitmap_hdc);
-
-                /*if (win->is_transparent()) {
-                    BLENDFUNCTION blend{0};
-                    blend.BlendOp = AC_SRC_OVER;
-                    blend.SourceConstantAlpha = 255;
-                    blend.AlphaFormat = AC_SRC_ALPHA;
-
-                    POINT src_point{0, 0};
-                    SIZE window_size{win->get_width(), win->get_height()};
-
-                    UpdateLayeredWindow(hwnd,
-                                        GetDC(NULL),
-                                        &src_point,
-                                        &window_size,
-                                        bitmap_hdc,
-                                        &src_point,
-                                        RGB(0, 0, 0),
-                                        &blend,
-                                        ULW_ALPHA);
-                }*/
+                // Drawing to transparent window is handled elsewhere.
+                if (not win->is_transparent()) {
+                    bitmap_blit(*win, hdc);
+                }
             }
             else {
                 FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));
@@ -247,11 +288,6 @@ LRESULT CALLBACK win_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param)
             EndPaint(hwnd, &ps);
             return 0;
         }
-
-        /*case WM_NCHITTEST: {
-            printf("yo\n");
-            return HTTRANSPARENT;
-        }*/
     }
 
     return DefWindowProc(hwnd, u_msg, w_param, l_param);

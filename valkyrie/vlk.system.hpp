@@ -8,13 +8,12 @@
 
 #ifdef WINDOWS
 #include <windows.h>
-#pragma comment(lib, "msimg32")
-#include <dwmapi.h>
-#pragma comment(lib, "dwmapi")
 #endif
 #include <string>
 #include <vector>
+#include <memory>
 #include <cstdint>
+#include <filesystem>
 
 #include "vlk.types.hpp"
 #include "vlk.gfx.hpp"
@@ -26,7 +25,7 @@ namespace vlk {
     f64 get_elapsed_time();
     i64 get_ticks_per_sec();
 
-    image load_image(std::string_view path);
+    image load_image(std::filesystem::path path);
 
     struct window_params {
         std::string_view title;

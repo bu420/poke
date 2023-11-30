@@ -5,8 +5,8 @@
 
 using namespace vlk;
 
-std::vector<std::string> vlk::string_split(const std::string& source,
-                                           const std::string& separator,
+std::vector<std::string> vlk::string_split(std::string_view source,
+                                           std::string_view separator,
                                            bool allow_empty_substrings) {
     assert(not source.empty());
     assert(not separator.empty());
@@ -43,4 +43,24 @@ std::vector<std::string> vlk::string_split(const std::string& source,
     }
 
     return tokens;
+}
+
+std::string vlk::uppercase(std::string_view str) {
+    std::string new_str{str};
+
+    for (auto& c : new_str) {
+        c = std::toupper(c);
+    }
+
+    return new_str;
+}
+
+std::string vlk::lowercase(std::string_view str) {
+    std::string new_str{str};
+
+    for (auto& c : new_str) {
+        c = std::tolower(c);
+    }
+
+    return new_str;
 }
