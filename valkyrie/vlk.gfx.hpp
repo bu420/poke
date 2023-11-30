@@ -154,6 +154,8 @@ namespace vlk {
 
         std::vector<u8>::iterator sample(f32 x, f32 y);
         std::vector<u8>::const_iterator sample(f32 x, f32 y) const;
+
+        static image flip_vertically(const image &image);
     };
 
     struct model {

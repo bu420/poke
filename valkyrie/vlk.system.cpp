@@ -6,6 +6,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <algorithm>
+#include <fstream>
 
 #include "vlk.util.hpp"
 
@@ -93,6 +94,30 @@ image vlk::load_image(std::filesystem::path path) {
     }
 
     return result;
+}
+
+sound vlk::load_sound(std::filesystem::path path) {
+    sound result;
+
+    std::basic_ifstream<u8> file(path, std::ios::binary);
+
+    if (not file.is_open()) {
+        throw std::runtime_error(
+            std::format("Valkyrie: file not found {}.", path.string()));
+    }
+
+    result.data = std::vector<u8>((std::istreambuf_iterator<u8>(file)),
+                                   std::istreambuf_iterator<u8>());
+
+    return result;
+}
+
+void vlk::play_sound(const sound &sound) {
+    PlaySound(reinterpret_cast<LPCTSTR>(&sound.data[0]), NULL, SND_ASYNC | SND_MEMORY);
+}
+
+void vlk::stop_all_sounds() {
+    PlaySound(nullptr, nullptr, 0);
 }
 
 window::window(const window_params &params) :

@@ -142,7 +142,7 @@ void parse_mtl(std::filesystem::path path,
     }
 }
 
-model vlk::parse_obj(std::filesystem::path path) {
+model vlk::parse_obj(std::filesystem::path path, bool flip_images_vertically) {
     model model;
 
     const auto tokens = tokenize_obj_or_mtl(read_text_file(path));
@@ -174,7 +174,8 @@ model vlk::parse_obj(std::filesystem::path path) {
         model.materials.push_back(material);
     }
     for (const auto& [_, image] : images) {
-        model.images.push_back(image);
+        model.images.push_back(
+            flip_images_vertically ? image::flip_vertically(image) : image);
     }
 
     // Parse meshes.

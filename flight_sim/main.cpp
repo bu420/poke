@@ -14,8 +14,13 @@ int main() {
     std::print("Loading assets...\n");
 
     model model;
+    sound windows95;
+    sound music;
+
     try {
-        model = parse_obj("../assets/car/car.obj");
+        model = parse_obj("../assets/lexus/lexus.obj");
+        windows95 = load_sound("../assets/Windows-95-startup-sound.wav");
+        music = load_sound("../assets/dnb.wav");
     }
     catch (std::runtime_error e) {
         std::print("{}\n", e.what());
@@ -36,17 +41,28 @@ int main() {
                                                0.001f,
                                                1000.0f);
 
-    const vec3f camera_pos{2.0f, 1.0f, 0.0f};
+    const vec3f camera_pos{100.0f, 30.0f, 0.0f};
     const mat4 view_matrix{look_at(camera_pos, {0.0f, 0.0f, 0.0f}, {0.0f, -1.0f, 0.0f})};
+
+    play_sound(music);
+    //play_sound(sound);
+
+    auto start = get_elapsed_time();
+    bool played = false;
 
     while (!win.get_should_close()) {
         win.poll_events();
+
+        if (not played && (get_elapsed_time() - start > 10000)) {
+            play_sound(windows95);
+            played = true;
+        }
 
         color_buf.clear({255, 255, 255});
         depth_buf.clear(1.0f);
 
         mat4 model_matrix{1.0f};
-        model_matrix = model_matrix.rotate_y(static_cast<f32>(get_elapsed_time() * std::numbers::pi / 1500));
+        model_matrix = model_matrix.rotate_y(static_cast<f32>(get_elapsed_time() * std::numbers::pi / 700));
         //model_matrix = model_matrix.translate({0.0f, 5.0f, 0.0f});
 
         mat4 mvp_matrix{model_matrix * view_matrix * projection_matrix};

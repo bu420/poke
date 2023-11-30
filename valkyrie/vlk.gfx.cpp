@@ -369,19 +369,42 @@ std::vector<u8>::const_iterator image::at(size_t x, size_t y) const {
 }
 
 std::vector<u8>::iterator image::sample(f32 x, f32 y) {
-    return at(static_cast<size_t>(std::round(x * (static_cast<f32>(width) - 1))),
-              static_cast<size_t>(std::round(y * (static_cast<f32>(height) - 1))));
+    return at(static_cast<size_t>(std::round(x * static_cast<f32>(width - 1))),
+              static_cast<size_t>(std::round(y * static_cast<f32>(height - 1))));
 }
 
 std::vector<u8>::const_iterator image::sample(f32 x, f32 y) const {
-    return at(static_cast<size_t>(std::round(x * (static_cast<f32>(width) - 1))),
-              static_cast<size_t>(std::round(y * (static_cast<f32>(height) - 1))));
+    return at(static_cast<size_t>(std::round(x * static_cast<f32>(width - 1))),
+              static_cast<size_t>(std::round(y * static_cast<f32>(height - 1))));
+}
+
+image image::flip_vertically(const image &image) {
+    vlk::image result{.width = image.width,
+                      .height = image.height,
+                      .channels = image.channels};
+
+    result.data.resize(image.width * image.height * image.channels);
+
+    for (size_t x = 0; x < image.width; ++x) {
+        for (size_t y = 0; y < image.height / 2; ++y) {
+            for (size_t channel = 0; channel < image.channels; ++channel) {
+                *(result.at(x, y) + channel) = 
+                    *(image.at(x, image.height - y - 1) + channel);
+
+                *(result.at(x, image.height - y - 1) + channel) =
+                    *(image.at(x, y) + channel);
+            }
+        }
+    }
+
+    return result;
 }
 
 color_rgba vlk::default_model_pixel_shader(const vertex &vertex,
                                            const model &model,
                                            size_t material_index) {
-    vec2f tex_coord = vertex.attributes[0].data.xy();
+    const vec2f tex_coord = vertex.attributes[0].data.xy();
+    const vec3f normal = vertex.attributes[1].data.xyz();
 
     color_rgba result{255, 0, 255, 255};
 
@@ -393,17 +416,10 @@ color_rgba vlk::default_model_pixel_shader(const vertex &vertex,
 
     if (material.albedo_map_index != model::no_index) {
         auto pixel = model.images[material.albedo_map_index].sample(tex_coord.x(), tex_coord.y());
-        result.r = static_cast<u8>(*pixel);
-        result.g = static_cast<u8>(*(pixel + 1));
-        result.b = static_cast<u8>(*(pixel + 2));
-        result.a = static_cast<u8>(*(pixel + 3));
-    }
-
-    if (material.normal_map_index != model::no_index) {
-        auto pixel = model.images[material.normal_map_index].sample(tex_coord.x(), tex_coord.y());
-        result.r += static_cast<u8>(*pixel);
-        result.g += static_cast<u8>(*(pixel + 1));
-        result.b += static_cast<u8>(*(pixel + 2));
+        result.r = *pixel;
+        result.g = *(pixel + 1);
+        result.b = *(pixel + 2);
+        result.a = *(pixel + 3);
     }
 
     return result;

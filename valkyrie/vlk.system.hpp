@@ -27,6 +27,14 @@ namespace vlk {
 
     image load_image(std::filesystem::path path);
 
+    struct sound {
+        std::vector<u8> data;
+    };
+
+    sound load_sound(std::filesystem::path path);
+    void play_sound(const sound &sound);
+    void stop_all_sounds();
+
     struct window_params {
         std::string_view title;
         i32 width;
