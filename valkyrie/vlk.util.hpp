@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <string>
+#include <filesystem>
 #include <functional>
 #include <print>
 
@@ -14,4 +15,6 @@ namespace vlk {
 
     std::string uppercase(std::string_view str);
     std::string lowercase(std::string_view str);
+
+    std::vector<u8> load_binary_file(std::filesystem::path path);
 }

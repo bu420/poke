@@ -1,4 +1,5 @@
-#include <xaudio2.h>
+
+#include <directx>
 #include <vector>
 
 void PlayWave(IXAudio2 *pXaudio2, LPCWSTR szFilename) {
@@ -71,12 +72,5 @@ void PlayWave(IXAudio2 *pXaudio2, LPCWSTR szFilename) {
 }
 
 int main() {
-    CoInitializeEx(nullptr, COINIT_MULTITHREADED);
-
-    HMODULE xaudio_dll = LoadLibraryExW(L"XAudio2_7.DLL", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
-
-    IXAudio2 *xaudio = nullptr;
-    XAudio2Create(&xaudio, 0);
-
-    PlayWave(xaudio, L"Media\\Wavs\\MusicMono.wav");
+    
 }

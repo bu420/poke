@@ -44,8 +44,7 @@ int main() {
     const vec3f camera_pos{100.0f, 30.0f, 0.0f};
     const mat4 view_matrix{look_at(camera_pos, {0.0f, 0.0f, 0.0f}, {0.0f, -1.0f, 0.0f})};
 
-    play_sound(music);
-    //play_sound(sound);
+    music.play();
 
     auto start = get_elapsed_time();
     bool played = false;
@@ -54,7 +53,7 @@ int main() {
         win.poll_events();
 
         if (not played && (get_elapsed_time() - start > 10000)) {
-            play_sound(windows95);
+            windows95.play();
             played = true;
         }
 

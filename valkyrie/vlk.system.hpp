@@ -14,6 +14,7 @@
 #include <memory>
 #include <cstdint>
 #include <filesystem>
+#include <thread>
 
 #include "vlk.types.hpp"
 #include "vlk.gfx.hpp"
@@ -29,11 +30,12 @@ namespace vlk {
 
     struct sound {
         std::vector<u8> data;
+
+        void play() const;
+        static void stop();
     };
 
     sound load_sound(std::filesystem::path path);
-    void play_sound(const sound &sound);
-    void stop_all_sounds();
 
     struct window_params {
         std::string_view title;

@@ -3,16 +3,21 @@
 #define GDIPVER 0x0110
 #include <gdiplus.h>
 #pragma comment(lib, "gdiplus")
+#include <mmdeviceapi.h>
+#include <Audioclient.h>
 #include <cassert>
 #include <stdexcept>
 #include <algorithm>
-#include <fstream>
 
 #include "vlk.util.hpp"
 
 using namespace vlk;
 
 constexpr auto vlk_window_class_name = L"PWA Window Class";
+
+static IAudioClient2 *audio_client = nullptr;
+static IAudioRenderClient *audio_render_client = nullptr;
+static u32 audio_buffer_size_in_frames;
 
 LRESULT CALLBACK win_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param);
 
@@ -25,14 +30,70 @@ void vlk::initialize() {
     wc.cbWndExtra = sizeof(window *);
     RegisterClass(&wc);
 
+    // Initialize GDI+.
+
     // Kept here until we need it outside this function...
     ULONG_PTR m_gdiplusToken;
 
     Gdiplus::GdiplusStartupInput gdiplusStartupInput;
     Gdiplus::GdiplusStartup(&m_gdiplusToken, &gdiplusStartupInput, nullptr);
+
+    // Initialize audio.
+
+    assert(CoInitializeEx(nullptr, COINIT_SPEED_OVER_MEMORY) == S_OK);
+
+    IMMDeviceEnumerator *device_enum = nullptr;
+    assert(CoCreateInstance(__uuidof(MMDeviceEnumerator),
+                            nullptr, 
+                            CLSCTX_ALL,
+                            __uuidof(IMMDeviceEnumerator),
+                            reinterpret_cast<LPVOID *>(&device_enum)) == S_OK);
+
+    IMMDevice *audio_device = nullptr;
+    assert(device_enum->GetDefaultAudioEndpoint(eRender, eConsole, &audio_device) == S_OK);
+
+    device_enum->Release();
+
+    assert(audio_device->Activate(__uuidof(IAudioClient2),
+                                  CLSCTX_ALL,
+                                  nullptr,
+                                  reinterpret_cast<LPVOID *>(&audio_client)) == S_OK);
+
+    audio_device->Release();
+
+    WAVEFORMATEX format{};
+    format.wFormatTag = WAVE_FORMAT_PCM;
+    format.nChannels = 2;
+    format.nSamplesPerSec = 44100;
+    format.wBitsPerSample = 16;
+    format.nBlockAlign = (format.nChannels * format.wBitsPerSample) / 8;
+    format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;
+
+    DWORD flags =
+        AUDCLNT_STREAMFLAGS_RATEADJUST |
+        AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM |
+        AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;
+
+    REFERENCE_TIME requested_sound_buffer_duration = 20000000;
+
+    assert(audio_client->Initialize(AUDCLNT_SHAREMODE_SHARED,
+                                    flags,
+                                    requested_sound_buffer_duration,
+                                    0,
+                                    &format,
+                                    nullptr) == S_OK);
+
+    assert(audio_client->GetService(__uuidof(IAudioRenderClient),
+                                    reinterpret_cast<LPVOID *>(&audio_render_client)) == S_OK);
+
+    assert(audio_client->GetBufferSize(&audio_buffer_size_in_frames) == S_OK);
+
+    assert(audio_client->Start() == S_OK);
 }
 
 void vlk::terminate() {
+    audio_client->Stop();
+    audio_client->Release();
 }
 
 double vlk::get_elapsed_time() {
@@ -53,7 +114,7 @@ image vlk::load_image(std::filesystem::path path) {
     }
 
     auto image = Gdiplus::Bitmap::FromFile(path.wstring().c_str());
-    
+
     auto status = image->GetLastStatus();
 
     if (status == Gdiplus::FileNotFound) {
@@ -65,7 +126,7 @@ image vlk::load_image(std::filesystem::path path) {
             std::format("Valkyrie: failed to load image {}.", path.string()));
     }
 
-    
+
     if (image->GetPixelFormat() != PixelFormat32bppARGB) {
         image->ConvertFormat(PixelFormat32bppARGB,
                              Gdiplus::DitherTypeNone,
@@ -80,7 +141,7 @@ image vlk::load_image(std::filesystem::path path) {
 
     result.data.resize(
         result.width * result.height * result.channels);
-    
+
     for (size_t x = 0; x < image->GetWidth(); ++x) {
         for (size_t y = 0; y < image->GetHeight(); ++y) {
             Gdiplus::Color color;
@@ -96,28 +157,97 @@ image vlk::load_image(std::filesystem::path path) {
     return result;
 }
 
+struct wav_header {
+    u32 riff_id;
+    u32 riff_chunk_size;
+    u32 wave_id;
+    u32 fmt_id;
+    u32 fmt_chunk_size;
+    u16 format_code;
+    u16 channels;
+    u32 sample_rate;
+    u32 byte_rate;
+    u16 block_align;
+    u16 bits_per_sample;
+    u32 data_id;
+    u32 data_chunk_size;
+    u16 samples;
+};
+
 sound vlk::load_sound(std::filesystem::path path) {
-    sound result;
+    sound sound;
+    sound.data = load_binary_file(path);
 
-    std::basic_ifstream<u8> file(path, std::ios::binary);
+    // Make sure the wav is 16-bit little-endian PCM.
+    auto header = *reinterpret_cast<wav_header *>(&sound.data[0]);
+    assert(header.riff_id == 1179011410);
+    assert(header.wave_id == 1163280727);
+    assert(header.fmt_id == 544501094);
+    //assert(header.data_id == 1635017060);
+    assert(header.format_code == 1); // PCM.
+    assert(header.channels == 2);
+    assert(header.fmt_chunk_size == 16);
+    assert(header.sample_rate == 44100);
+    assert(header.bits_per_sample == 16);
+    assert(header.block_align == header.channels * header.bits_per_sample / 8);
+    assert(header.byte_rate == header.sample_rate * header.block_align);
 
-    if (not file.is_open()) {
-        throw std::runtime_error(
-            std::format("Valkyrie: file not found {}.", path.string()));
-    }
-
-    result.data = std::vector<u8>((std::istreambuf_iterator<u8>(file)),
-                                   std::istreambuf_iterator<u8>());
-
-    return result;
+    return sound;
 }
 
-void vlk::play_sound(const sound &sound) {
-    PlaySound(reinterpret_cast<LPCTSTR>(&sound.data[0]), NULL, SND_ASYNC | SND_MEMORY);
+void sound::play() const {
+    auto header = reinterpret_cast<const wav_header *>(&data[0]);
+    const u32 sample_count = header->data_chunk_size / (header->channels * sizeof(u16));
+    const u16 *samples = &header->samples;
+
+    std::thread thread{[&] {
+        u32 wav_playback_sample = 0;
+
+        while (true) {
+            u32 buffer_padding;
+            assert(audio_client->GetCurrentPadding(&buffer_padding) == S_OK);
+
+            u32 sound_buffer_latency = audio_buffer_size_in_frames / 50;
+            u32 frames_to_write = sound_buffer_latency - buffer_padding;
+
+            i16 *buffer = nullptr;
+            assert(audio_render_client->GetBuffer(frames_to_write,
+                                                  reinterpret_cast<BYTE **>(&buffer)) == S_OK);
+
+            for (size_t i = 0; i < frames_to_write; ++i) {
+                /*
+                // Left.
+                *buffer++ = samples[wav_playback_sample];
+                // Right.
+                *buffer++ = samples[wav_playback_sample];
+
+                wav_playback_sample++;
+                wav_playback_sample %= sample_count;*/
+
+                u32 left_index = header->channels * wav_playback_sample;
+                u32 right_index = left_index + header->channels - 1;
+
+                u16 left_sample = samples[left_index];
+                u16 right_sample = samples[right_index];
+
+                ++wav_playback_sample;
+
+                *buffer++ = left_sample;
+                *buffer++ = right_sample;
+
+                if (wav_playback_sample >= sample_count) {
+                    wav_playback_sample -= sample_count;
+                }
+            }
+
+            assert(audio_render_client->ReleaseBuffer(frames_to_write, 0) == S_OK);
+        }
+    }};
+    thread.join();
 }
 
-void vlk::stop_all_sounds() {
-    PlaySound(nullptr, nullptr, 0);
+void sound::stop() {
+
 }
 
 window::window(const window_params &params) :
