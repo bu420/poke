@@ -19,8 +19,8 @@ int main() {
 
     try {
         model = parse_obj("../assets/lexus/lexus.obj");
-        windows95 = load_sound("../assets/Windows-95-startup-sound.wav");
-        music = load_sound("../assets/dnb.wav");
+        windows95 = load_sound_wav_pcm_s16le("../assets/Windows-95-startup-sound.wav");
+        music = load_sound_wav_pcm_s16le("../assets/dnb.wav");
     }
     catch (std::runtime_error e) {
         std::print("{}\n", e.what());
@@ -62,7 +62,6 @@ int main() {
 
         mat4 model_matrix{1.0f};
         model_matrix = model_matrix.rotate_y(static_cast<f32>(get_elapsed_time() * std::numbers::pi / 700));
-        //model_matrix = model_matrix.translate({0.0f, 5.0f, 0.0f});
 
         mat4 mvp_matrix{model_matrix * view_matrix * projection_matrix};
         mat3 normal_matrix{model_matrix.inverse().transpose()};
