@@ -15,6 +15,8 @@ using namespace vlk;
 
 #define HRESULT_CHECK(expr) { HRESULT _hr = expr; assert(_hr == S_OK); }
 
+static std::vector<std::jthread> audio_threads;
+
 constexpr auto vlk_window_class_name = L"PWA Window Class";
 
 LRESULT CALLBACK win_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param);
@@ -31,10 +33,10 @@ void vlk::initialize() {
     // Initialize GDI+.
 
     // Kept here until we need it outside this function...
-    ULONG_PTR m_gdiplusToken;
+    ULONG_PTR gdiplus_token;
 
-    Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-    Gdiplus::GdiplusStartup(&m_gdiplusToken, &gdiplusStartupInput, nullptr);
+    Gdiplus::GdiplusStartupInput gdiplus_startup_input;
+    Gdiplus::GdiplusStartup(&gdiplus_token, &gdiplus_startup_input, nullptr);
 
     // Initialize WASAPI (audio).
 
@@ -56,7 +58,7 @@ i64 vlk::get_ticks_per_sec() {
     return ticks_per_second.QuadPart;
 }
 
-image vlk::load_image(std::filesystem::path path) {
+image vlk::load_image(std::filesystem::path path, bool flip_vertically) {
     if (not path.is_absolute()) {
         path = std::filesystem::current_path() / path;
     }
@@ -93,7 +95,9 @@ image vlk::load_image(std::filesystem::path path) {
     for (size_t x = 0; x < image->GetWidth(); ++x) {
         for (size_t y = 0; y < image->GetHeight(); ++y) {
             Gdiplus::Color color;
-            image->GetPixel(static_cast<INT>(x), static_cast<INT>(y), &color);
+            image->GetPixel(static_cast<INT>(x), 
+                            static_cast<INT>(flip_vertically ? image->GetHeight() - y - 1 : y),
+                            &color);
 
             *(result.at(x, y) + 0) = color.GetR();
             *(result.at(x, y) + 1) = color.GetG();
@@ -130,12 +134,11 @@ struct wav_header {
 #pragma pack(pop)
 
 sound vlk::load_sound_wav_pcm_s16le(std::filesystem::path path) {
-    sound sound;
-    sound.data = load_binary_file(path);
+    const sound sound = load_binary_file(path);
 
-    u32 id = *reinterpret_cast<u32 *>(&sound.data[70]);
+    u32 id = *reinterpret_cast<const u32 *>(&sound[70]);
 
-    auto header = *reinterpret_cast<wav_header *>(&sound.data[0]);
+    auto header = *reinterpret_cast<const wav_header *>(&sound[0]);
     assert(header.riff_id == 1179011410); // "RIFF"
     assert(header.wave_id == 1163280727); // "WAVE"
     assert(header.fmt_id == 544501094);   // "fmt " 
@@ -151,8 +154,10 @@ sound vlk::load_sound_wav_pcm_s16le(std::filesystem::path path) {
     return sound;
 }
 
-void sound::play() const {
-    std::jthread thread{[this] {
+size_t vlk::play_sound(const sound &sound) {
+    size_t id = audio_threads.size();
+
+    audio_threads.push_back(std::jthread{[&](std::stop_token stop_token) {
         IMMDeviceEnumerator *device_enum = nullptr;
         HRESULT_CHECK(CoCreateInstance(__uuidof(MMDeviceEnumerator),
                                        nullptr,
@@ -204,13 +209,13 @@ void sound::play() const {
 
         HRESULT_CHECK(audio_client->Start());
 
-        auto header = reinterpret_cast<const wav_header *>(&data[0]);
+        auto header = reinterpret_cast<const wav_header *>(&sound[0]);
         const u32 sample_count = header->data_chunk_size / header->channels / (header->bits_per_sample / 8);
         const u16 *samples = &header->samples;
 
         u32 wav_playback_sample = 0;
 
-        while (true) {
+        while (not stop_token.stop_requested()) {
             if (wav_playback_sample >= sample_count) {
                 break;
             }
@@ -244,12 +249,13 @@ void sound::play() const {
         audio_client->Stop();
         audio_client->Release();
         audio_render_client->Release();
-    }};
-    thread.detach();
+    }});
+
+    return id;
 }
 
-void sound::stop() {
-
+void vlk::stop_sound(size_t id) {
+    audio_threads.at(id).request_stop();
 }
 
 window::window(const window_params &params) :

@@ -30,6 +30,20 @@ namespace vlk {
         T length() const {
             return std::sqrt(x() * x() + y() * y());
         }
+
+        T min() const {
+            return std::min(x(), y());
+        }
+        T max() const {
+            return std::max(x(), y());
+        }
+        vec2<T> min(const vec2<T> &v) const {
+            return {std::min(x(), v.x()), std::min(y(), v.y())};
+        }
+        vec2<T> max(const vec2<T> &v) const {
+            return {std::max(x(), v.x()), std::max(y(), v.y())};
+        }
+
         T& operator [] (int i) {
             assert(i >= 0 && i < 2 && "Index outside bounds.");
             return arr[i];
@@ -43,6 +57,7 @@ namespace vlk {
             return x() == v.x() && y() == v.y();
         }
 
+        vec2<T> operator-() const { return vec2<T>(-x(), -y()); }
         vec2<T> operator+(const vec2<T>& v) const { return vec2<T>(x() + v.x(), y() + v.y()); }
         vec2<T> operator+(T scalar) const { return vec2<T>(x() + scalar, y() + scalar); }
         vec2<T>& operator+=(const vec2<T>& v) { x() += v.x(); y() += v.y(); return *this; }
@@ -105,6 +120,20 @@ namespace vlk {
         T length() const {
             return std::sqrt(x() * x() + y() * y() + z() * z());
         }
+
+        T min() const {
+            return std::min({x(), y(), z()});
+        }
+        T max() const {
+            return std::max({x(), y(), z()});
+        }
+        vec3<T> min(const vec3<T> &v) const {
+            return {std::min(x(), v.x()), std::min(y(), v.y()), std::min(z(), v.z())};
+        }
+        vec3<T> max(const vec3<T> &v) const {
+            return {std::max(x(), v.x()), std::max(y(), v.y()), std::max(z(), v.z())};
+        }
+
         T& operator [] (int i) {
             assert(i >= 0 && i < 3 && "Index outside bounds.");
             return arr[i];
@@ -146,6 +175,7 @@ namespace vlk {
             return (*this = *this * m);
         }
 
+        vec3<T> operator-() const { return vec3<T>(-x(), -y(), -z()); }
         vec3<T> operator+(const vec3<T>& v) const { return vec3<T>(x() + v.x(), y() + v.y(), z() + v.z()); }
         vec3<T> operator+(T scalar) const { return vec3<T>(x() + scalar, y() + scalar, z() + scalar); }
         vec3<T>& operator+=(const vec3<T>& v) { x() += v.x(); y() += v.y(); z() += v.z(); return *this; }
@@ -239,6 +269,20 @@ namespace vlk {
         T length() const {
             return std::sqrt(x() * x() + y() * y() + z() * z() + w() * w());
         }
+
+        T min() const {
+            return std::min({x(), y(), z(), w()});
+        }
+        T max() const {
+            return std::max({x(), y(), z(), w()});
+        }
+        vec4<T> min(const vec4<T> &v) const {
+            return {std::min(x(), v.x()), std::min(y(), v.y()), std::min(z(), v.z()), std::min(w(), v.w())};
+        }
+        vec4<T> max(const vec4<T> &v) const {
+            return {std::max(x(), v.x()), std::max(y(), v.y()), std::max(z(), v.z()), std::max(w(), v.w())};
+        }
+
         T& operator [] (int i) {
             assert(i >= 0 && i < 4 && "Index outside bounds.");
             return arr[i];
@@ -268,6 +312,7 @@ namespace vlk {
             return (*this = *this * m);
         }
 
+        vec4<T> operator-() const { return vec4<T>(-x(), -y(), -z(), -w()); }
         vec4<T> operator+(const vec4<T>& v) const { return vec4<T>(x() + v.x(), y() + v.y(), z() + v.z(), w() + v.w()); }
         vec4<T> operator+(T scalar) const { return vec4<T>(x() + scalar, y() + scalar, z() + scalar, w() + scalar); }
         vec4<T>& operator+=(const vec4<T>& v) { x() += v.x(); y() += v.y(); z() += v.z(); w() += v.w(); return *this; }

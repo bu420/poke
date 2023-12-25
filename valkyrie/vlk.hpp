@@ -5,5 +5,6 @@
 #include "vlk.vec.hpp"
 #include "vlk.math.hpp"
 #include "vlk.gfx.hpp"
+#include "vlk.physics.hpp"
 #include "vlk.parse_obj.hpp"
 #include "vlk.system.hpp"

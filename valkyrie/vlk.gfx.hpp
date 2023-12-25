@@ -59,6 +59,11 @@ namespace vlk {
             return (*this)[y * width + x];
         }
 
+        T sample(f32 x, f32 y) const {
+            return at(static_cast<size_t>(std::round(x * static_cast<f32>(width - 1))),
+                      static_cast<size_t>(std::round(y * static_cast<f32>(height - 1))));
+        }
+
     protected:
         size_t width;
         size_t height;

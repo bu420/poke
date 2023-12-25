@@ -143,6 +143,7 @@
     <ClCompile Include="vlk.parse_obj.cpp" />
     <ClCompile Include="vlk.math.cpp" />
     <ClCompile Include="vlk.gfx.cpp" />
+    <ClCompile Include="vlk.physics.cpp" />
     <ClCompile Include="vlk.types.cpp" />
     <ClCompile Include="vlk.util.cpp" />
     <ClCompile Include="vlk.system.cpp" />
@@ -150,6 +151,7 @@
   <ItemGroup>
     <ClInclude Include="vlk.hpp" />
     <ClInclude Include="vlk.parse_obj.hpp" />
+    <ClInclude Include="vlk.physics.hpp" />
     <ClInclude Include="vlk.types.hpp" />
     <ClInclude Include="vlk.gfx.hpp" />
     <ClInclude Include="vlk.math.hpp" />

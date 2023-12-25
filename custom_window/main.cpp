@@ -1,8 +1,5 @@
-#include <valkyrie/vlk.math.hpp>
-#include <valkyrie/vlk.gfx.hpp>
-#include <valkyrie/vlk.system.hpp>
+#include <valkyrie/vlk.hpp>
 #include <stdexcept>
-#include <print>
 
 using namespace vlk;
 
@@ -22,7 +19,7 @@ int main() {
 
     image image;
     try {
-        image = load_image("..\\assets\\frog_with_margin.png");
+        image = load_image("../assets/frog_with_margin.png");
     }
     catch (std::runtime_error e) {
         std::print("{}\n", e.what());

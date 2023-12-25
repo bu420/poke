@@ -7,6 +7,7 @@
 #endif
 
 #ifdef WINDOWS
+#define NOMINMAX
 #include <windows.h>
 #endif
 #include <string>
@@ -19,6 +20,12 @@
 #include "vlk.types.hpp"
 #include "vlk.gfx.hpp"
 
+#define VLK_BENCHMARK_START \
+    f64 _start = get_elapsed_time();
+
+#define VLK_BENCHMARK_END \
+    std::print("Benchmark: {}ms\n", get_elapsed_time() - _start);
+
 namespace vlk {
     void initialize();
     void terminate();
@@ -26,17 +33,15 @@ namespace vlk {
     f64 get_elapsed_time();
     i64 get_ticks_per_sec();
 
-    image load_image(std::filesystem::path path);
+    image load_image(std::filesystem::path path, bool flip_vertically = false);
 
-    struct sound {
-        std::vector<u8> data;
-
-        void play() const;
-        static void stop();
-    };
+    using sound = std::vector<u8>;
 
     // Load a 16-bit PCM wav file.
     sound load_sound_wav_pcm_s16le(std::filesystem::path path);
+
+    size_t play_sound(const sound &sound);
+    void stop_sound(size_t id);
 
     struct window_params {
         std::string_view title;

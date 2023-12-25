@@ -50,7 +50,8 @@ std::vector<std::vector<std::string>> tokenize_obj_or_mtl(std::string_view file_
 
 void parse_mtl(std::filesystem::path path,
                std::vector<std::pair<std::string, model::material>>& materials,
-               std::vector<std::pair<std::filesystem::path, image>>& images) {
+               std::vector<std::pair<std::filesystem::path, image>>& images,
+               bool flip_images_vertically) {
     const auto tokens = tokenize_obj_or_mtl(read_text_file(path));
 
     /*
@@ -126,7 +127,7 @@ void parse_mtl(std::filesystem::path path,
 
                                   }
                                   else {
-                                      images.push_back(std::make_pair(image_path, load_image(image_path)));
+                                      images.push_back(std::make_pair(image_path, load_image(image_path, flip_images_vertically)));
                                       return images.size() - 1;
                                   }
                               }();
@@ -161,7 +162,7 @@ model vlk::parse_obj(std::filesystem::path path, bool flip_images_vertically) {
     while (mtllib_pos != tokens.end()) {
         const auto mtl_path = path.remove_filename() / mtllib_pos->at(1);
 
-        parse_mtl(mtl_path, materials, images);
+        parse_mtl(mtl_path, materials, images, flip_images_vertically);
 
         mtllib_pos = std::find_if(mtllib_pos + 1,
                                   tokens.end(),
@@ -174,8 +175,7 @@ model vlk::parse_obj(std::filesystem::path path, bool flip_images_vertically) {
         model.materials.push_back(material);
     }
     for (const auto& [_, image] : images) {
-        model.images.push_back(
-            flip_images_vertically ? image::flip_vertically(image) : image);
+        model.images.push_back(image);
     }
 
     // Parse meshes.
