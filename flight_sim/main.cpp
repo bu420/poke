@@ -31,7 +31,8 @@ int main() {
 
     window win{{.title = "",
                 .width = width,
-                .height = height}};
+                .height = height,
+                .transparent = true}};
 
     win.set_icon(icon);
 
@@ -52,7 +53,7 @@ int main() {
     while (!win.get_should_close()) {
         win.poll_events();
 
-        color_buf.clear({255, 255, 255, 255});
+        color_buf.clear({0, 0, 0, 0});
         depth_buf.clear(1.0f);
 
         mat4 model_matrix{1.0f};

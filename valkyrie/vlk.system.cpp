@@ -76,7 +76,6 @@ image vlk::load_image(std::filesystem::path path, bool flip_vertically) {
             std::format("Valkyrie: failed to load image {}.", path.string()));
     }
 
-
     if (image->GetPixelFormat() != PixelFormat32bppARGB) {
         image->ConvertFormat(PixelFormat32bppARGB,
                              Gdiplus::DitherTypeNone,
@@ -266,20 +265,16 @@ void vlk::stop_sound(size_t id) {
 static HBITMAP create_bitmap(HWND hwnd, size_t width, size_t height, u32 **pixels) {
     HDC hdc = GetDC(hwnd);
 
-    BITMAPV5HEADER info{0};
-    info.bV5Size        = sizeof(BITMAPV5HEADER);
-    info.bV5Width       = static_cast<i32>(width);
-    info.bV5Height      = -static_cast<i32>(height);
-    info.bV5Planes      = 1;
-    info.bV5BitCount    = 32;
-    info.bV5Compression = BI_RGB;
-    info.bV5RedMask     = 0xff000000;
-    info.bV5GreenMask   = 0x00ff0000;
-    info.bV5BlueMask    = 0x0000ff00;
-    info.bV5AlphaMask   = 0x000000ff;
+    BITMAPINFO info{};
+    info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
+    info.bmiHeader.biWidth = static_cast<i32>(width);
+    info.bmiHeader.biHeight = -static_cast<i32>(height);
+    info.bmiHeader.biPlanes = 1;
+    info.bmiHeader.biBitCount = 32;
+    info.bmiHeader.biCompression = BI_RGB;
 
     HBITMAP bitmap = CreateDIBSection(hdc,
-                                      reinterpret_cast<BITMAPINFO *>(&info),
+                                      &info,
                                       DIB_RGB_COLORS,
                                       reinterpret_cast<void **>(pixels),
                                       nullptr,
@@ -386,13 +381,20 @@ static void blit(const window &window, HDC hdc) {
     DeleteDC(memory_hdc);
 }
 
+static void copy_pixels_rgba_to_argb(u32 *dst, const u32 *src, size_t len) {
+    for (size_t i = 0; i < len; ++i) {
+        // AABBGGRR to AARRGGBB.
+        dst[i] = (src[i] & 0xff00ff00) | ((src[i] & 0x00ff0000) >> 16) | ((src[i] & 0x000000ff) << 16);
+    }
+}
+
 void window::swap_buffers(const color_buffer &color_buf) {
     assert(color_buf.get_width() == this->width && color_buf.get_height() == this->height &&
            "Color buffer size does not match window size.");
 
-    std::memcpy(pixels, 
-                &color_buf[0], 
-                static_cast<size_t>(width * height * 4));
+    copy_pixels_rgba_to_argb(pixels, 
+                             reinterpret_cast<const u32 *>(&color_buf[0]), 
+                             static_cast<size_t>(width * height));
 
     if (not transparent) {
         // Trigger redraw.
@@ -434,9 +436,9 @@ void window::set_icon(const image &image) {
                                          image.height, 
                                          &pixels);
 
-    std::memcpy(pixels,
-                image.data.data(),
-                static_cast<size_t>(image.width * image.height * 4));
+    copy_pixels_rgba_to_argb(pixels,
+                             reinterpret_cast<const u32 *>(image.data.data()),
+                             static_cast<size_t>(image.width * image.height));
 
     HBITMAP mask_bitmap = CreateBitmap(static_cast<i32>(image.width), 
                                        static_cast<i32>(image.height),
