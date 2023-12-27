@@ -11,12 +11,14 @@ int main() {
 
     model model;
     sound music;
+    image icon;
 
     std::print("Loading assets...\n");
 
     try {
         model = vlk::parse_obj("../assets/lexus/lexus.obj");
         music = vlk::load_sound_wav_pcm_s16le("../assets/drake.wav");
+        icon = vlk::load_image("../assets/frog.ico");
     }
     catch (std::runtime_error e) {
         std::print("{}\n", e.what());
@@ -28,6 +30,8 @@ int main() {
     window win{{.title = "",
                 .width = width,
                 .height = height}};
+
+    win.set_icon(icon);
 
     color_buffer color_buf{width, height};
     depth_buffer depth_buf{width, height};

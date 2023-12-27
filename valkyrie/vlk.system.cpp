@@ -95,7 +95,7 @@ image vlk::load_image(std::filesystem::path path, bool flip_vertically) {
     for (size_t x = 0; x < image->GetWidth(); ++x) {
         for (size_t y = 0; y < image->GetHeight(); ++y) {
             Gdiplus::Color color;
-            image->GetPixel(static_cast<INT>(x), 
+            image->GetPixel(static_cast<INT>(x),
                             static_cast<INT>(flip_vertically ? image->GetHeight() - y - 1 : y),
                             &color);
 
@@ -139,17 +139,17 @@ sound vlk::load_sound_wav_pcm_s16le(std::filesystem::path path) {
     u32 id = *reinterpret_cast<const u32 *>(&sound[70]);
 
     auto header = *reinterpret_cast<const wav_header *>(&sound[0]);
-    assert(header.riff_id == 1179011410); // "RIFF"
-    assert(header.wave_id == 1163280727); // "WAVE"
-    assert(header.fmt_id == 544501094);   // "fmt " 
-    assert(header.data_id == 1635017060); // "data"
-    assert(header.format_code == 1);      // 1 means PCM.
-    assert(header.channels == 2);
-    assert(header.fmt_chunk_size == 16);
-    assert(header.sample_rate == 44100);
+    assert(header.riff_id         == 1179011410); // "RIFF"
+    assert(header.wave_id         == 1163280727); // "WAVE"
+    assert(header.fmt_id          == 544501094);  // "fmt " 
+    assert(header.data_id         == 1635017060); // "data"
+    assert(header.format_code     == 1);          // 1 means PCM.
+    assert(header.channels        == 2);
+    assert(header.fmt_chunk_size  == 16);
+    assert(header.sample_rate     == 44100);
     assert(header.bits_per_sample == 16);
-    assert(header.block_align == header.channels * header.bits_per_sample / 8);
-    assert(header.byte_rate == header.sample_rate * header.block_align);
+    assert(header.block_align     == header.channels * header.bits_per_sample / 8);
+    assert(header.byte_rate       == header.sample_rate * header.block_align);
 
     return sound;
 }
@@ -179,11 +179,11 @@ size_t vlk::play_sound(const sound &sound) {
         audio_device->Release();
 
         WAVEFORMATEX format{};
-        format.wFormatTag = WAVE_FORMAT_PCM;
-        format.nChannels = 2;
-        format.nSamplesPerSec = 44100;
-        format.wBitsPerSample = 16;
-        format.nBlockAlign = (format.nChannels * format.wBitsPerSample) / 8;
+        format.wFormatTag      = WAVE_FORMAT_PCM;
+        format.nChannels       = 2;
+        format.nSamplesPerSec  = 44100;
+        format.wBitsPerSample  = 16;
+        format.nBlockAlign     = (format.nChannels * format.wBitsPerSample) / 8;
         format.nAvgBytesPerSec = format.nSamplesPerSec * format.nBlockAlign;
 
         DWORD flags =
@@ -215,7 +215,7 @@ size_t vlk::play_sound(const sound &sound) {
 
         u32 wav_playback_sample = 0;
 
-        while (not stop_token.stop_requested()) {
+        while (!stop_token.stop_requested()) {
             if (wav_playback_sample >= sample_count) {
                 break;
             }
@@ -258,13 +258,40 @@ void vlk::stop_sound(size_t id) {
     audio_threads.at(id).request_stop();
 }
 
+// RGBA bitmap.
+static HBITMAP create_bitmap(HWND hwnd, size_t width, size_t height, u32 **pixels) {
+    HDC hdc = GetDC(hwnd);
+
+    BITMAPV5HEADER info{0};
+    info.bV5Size        = sizeof(BITMAPV5HEADER);
+    info.bV5Width       = static_cast<i32>(width);
+    info.bV5Height      = -static_cast<i32>(height);
+    info.bV5Planes      = 1;
+    info.bV5BitCount    = 32;
+    info.bV5Compression = BI_RGB;
+    info.bV5RedMask     = 0xff000000;
+    info.bV5GreenMask   = 0x00ff0000;
+    info.bV5BlueMask    = 0x0000ff00;
+    info.bV5AlphaMask   = 0x000000ff;
+
+    HBITMAP bitmap = CreateDIBSection(hdc,
+                                      reinterpret_cast<BITMAPINFO *>(&info),
+                                      DIB_RGB_COLORS,
+                                      reinterpret_cast<void **>(pixels),
+                                      nullptr,
+                                      0);
+    assert(bitmap);
+
+    ReleaseDC(nullptr, hdc);
+
+    return bitmap;
+}
+
 window::window(const window_params &params) :
     should_close{false},
     width{params.width},
     height{params.height},
     transparent{params.transparent} {
-    // Create window.
-
     std::wstring wide_title;
     wide_title.assign(params.title.begin(), params.title.end());
 
@@ -293,36 +320,16 @@ window::window(const window_params &params) :
                                GetModuleHandle(0),
                                NULL);
 
-    if (not hwnd) {
+    if (!hwnd) {
         throw std::runtime_error("Valkyrie: failed to create win32 window.");
     }
 
     this->hwnd = hwnd;
+
     pixels = new u32[width * height];
+    bitmap = create_bitmap(hwnd, width, height, &pixels);
 
     SetWindowLongPtr(hwnd, 0, (LONG_PTR)this);
-
-    // Create background bitmap.
-
-    HDC hdc = GetDC(hwnd);
-
-    BITMAPINFO bmi{0};
-    bmi.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-    bmi.bmiHeader.biWidth = width;
-    bmi.bmiHeader.biHeight = -height;
-    bmi.bmiHeader.biPlanes = 1;
-    bmi.bmiHeader.biBitCount = 32;
-    bmi.bmiHeader.biCompression = BI_RGB;
-
-    bitmap = CreateDIBSection(hdc,
-                              &bmi,
-                              DIB_RGB_COLORS,
-                              reinterpret_cast<void **>(&pixels),
-                              NULL,
-                              NULL);
-    assert(bitmap);
-
-    ReleaseDC(NULL, hdc);
 
     ShowWindow(hwnd, SW_SHOW);
 }
@@ -336,7 +343,7 @@ void window::poll_events() {
     }
 }
 
-void bitmap_blit(const window &window, HDC hdc) {
+static void blit(const window &window, HDC hdc) {
     HDC memory_hdc = CreateCompatibleDC(hdc);
     HGDIOBJ old_bitmap = SelectObject(memory_hdc, window.bitmap);
 
@@ -353,8 +360,8 @@ void bitmap_blit(const window &window, HDC hdc) {
     SelectObject(hdc, old_bitmap);
 
     if (window.is_transparent()) {
-        POINT zero = {0, 0};
-        SIZE size = {window.get_width(), window.get_height()};
+        POINT zero{0, 0};
+        SIZE size{window.get_width(), window.get_height()};
 
         BLENDFUNCTION blend{0};
         blend.BlendOp = AC_SRC_OVER;
@@ -379,27 +386,18 @@ void window::swap_buffers(const color_buffer &color_buf) {
     assert(color_buf.get_width() == this->width && color_buf.get_height() == this->height &&
            "Color buffer size does not match window size.");
 
-    // Copy color buffer (back buffer) into window front buffer.
-    for (size_t x{0}; x < color_buf.get_width(); ++x) {
-        for (size_t y{0}; y < color_buf.get_height(); ++y) {
-            color_rgba color{color_buf.at(x, y)};
-
-            // Win32 bitmaps use a ARGB format.
-            u32 packed{static_cast<u32>(color.a) << 24 |
-                       static_cast<u32>(color.r) << 16 |
-                       static_cast<u32>(color.g) << 8 |
-                       static_cast<u32>(color.b)};
-
-            pixels[y * color_buf.get_width() + x] = packed;
-        }
-    }
+    std::memcpy(pixels, 
+                &color_buf[0], 
+                static_cast<size_t>(width * height * 4));
 
     if (not transparent) {
         // Trigger redraw.
-        InvalidateRect(hwnd, NULL, FALSE);
+        InvalidateRect(hwnd, nullptr, false);
     }
     else {
-        bitmap_blit(*this, GetDC(hwnd));
+        HDC hdc = GetDC(hwnd);
+        blit(*this, hdc);
+        ReleaseDC(nullptr, hdc);
     }
 }
 
@@ -423,6 +421,46 @@ bool window::is_transparent() const {
     return transparent;
 }
 
+void window::set_icon(const image &image) {
+    assert(image.channels == 4);
+
+    u32 *pixels = new u32[image.width * image.height];
+    HBITMAP color_bitmap = create_bitmap(hwnd, 
+                                         image.width, 
+                                         image.height, 
+                                         &pixels);
+
+    std::memcpy(pixels,
+                image.data.data(),
+                static_cast<size_t>(image.width * image.height * 4));
+
+    HBITMAP mask_bitmap = CreateBitmap(static_cast<i32>(image.width), 
+                                       static_cast<i32>(image.height),
+                                       1, 
+                                       1, 
+                                       nullptr);
+    assert(mask_bitmap);
+
+    ICONINFO info{0};
+    info.fIcon    = true;
+    info.xHotspot = 0;
+    info.yHotspot = 0;
+    info.hbmMask  = mask_bitmap;
+    info.hbmColor = color_bitmap;
+
+    HICON icon = CreateIconIndirect(&info);
+    assert(icon);
+
+    DeleteObject(mask_bitmap);
+    DeleteObject(color_bitmap);
+    //delete[] pixels;
+
+    SendMessage(hwnd, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(icon));
+    SendMessage(hwnd, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(icon));
+
+    //DestroyIcon(icon);
+}
+
 LRESULT CALLBACK win_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param) {
     auto win = reinterpret_cast<window *>(GetWindowLongPtr(hwnd, 0));
 
@@ -439,10 +477,10 @@ LRESULT CALLBACK win_proc(HWND hwnd, UINT u_msg, WPARAM w_param, LPARAM l_param)
             HDC hdc = BeginPaint(hwnd, &ps);
 
             if (win) {
-                // Drawing to transparent window is handled elsewhere.
-                if (not win->is_transparent()) {
-                    bitmap_blit(*win, hdc);
-                }
+                // Drawing to transparent window is handled in swap_buffers().
+                assert(!win->is_transparent());
+
+                blit(*win, hdc);
             }
             else {
                 FillRect(hdc, &ps.rcPaint, (HBRUSH)(COLOR_WINDOW + 1));

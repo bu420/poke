@@ -55,10 +55,9 @@ namespace vlk {
     public:
 #ifdef WINDOWS
         HWND hwnd;
-        // Raw pointer array because we need a consistent memory address.
-        u32* pixels;
-        // A handle to the window background bitmap.
+        
         HBITMAP bitmap;
+        u32 *pixels;
 #endif
 
         window(const window_params& params);
@@ -73,6 +72,8 @@ namespace vlk {
         i32 get_height() const;
 
         bool is_transparent() const;
+
+        void set_icon(const image &image);
 
     private:
         bool should_close;
