@@ -40,7 +40,7 @@ namespace vlk {
     // Load a 16-bit PCM wav file.
     sound load_sound_wav_pcm_s16le(std::filesystem::path path);
 
-    size_t play_sound(const sound &sound);
+    size_t play_sound(const sound &sound, bool loop = false);
     void stop_sound(size_t id);
 
     struct window_params {

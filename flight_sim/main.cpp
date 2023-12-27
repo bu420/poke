@@ -11,6 +11,7 @@ int main() {
 
     model model;
     sound music;
+    sound boom;
     image icon;
 
     std::print("Loading assets...\n");
@@ -18,7 +19,8 @@ int main() {
     try {
         model = vlk::parse_obj("../assets/lexus/lexus.obj");
         music = vlk::load_sound_wav_pcm_s16le("../assets/drake.wav");
-        icon = vlk::load_image("../assets/frog.ico");
+        boom = vlk::load_sound_wav_pcm_s16le("../assets/vine_boom.wav");
+        icon = vlk::load_image("../assets/runescape.ico");
     }
     catch (std::runtime_error e) {
         std::print("{}\n", e.what());
@@ -44,7 +46,8 @@ int main() {
     const vec3f camera_pos{100.0f, 30.0f, 0.0f};
     const mat4 view_matrix = vlk::look_at(camera_pos, {0.0f, 0.0f, 0.0f}, {0.0f, -1.0f, 0.0f});
 
-    vlk::play_sound(music);
+    vlk::play_sound(boom);
+    vlk::play_sound(music, true);
 
     while (!win.get_should_close()) {
         win.poll_events();

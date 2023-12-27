@@ -154,10 +154,10 @@ sound vlk::load_sound_wav_pcm_s16le(std::filesystem::path path) {
     return sound;
 }
 
-size_t vlk::play_sound(const sound &sound) {
+size_t vlk::play_sound(const sound &sound, bool loop) {
     size_t id = audio_threads.size();
 
-    audio_threads.push_back(std::jthread{[&](std::stop_token stop_token) {
+    audio_threads.push_back(std::jthread{[=](std::stop_token stop_token) {
         IMMDeviceEnumerator *device_enum = nullptr;
         HRESULT_CHECK(CoCreateInstance(__uuidof(MMDeviceEnumerator),
                                        nullptr,
@@ -217,7 +217,11 @@ size_t vlk::play_sound(const sound &sound) {
 
         while (!stop_token.stop_requested()) {
             if (wav_playback_sample >= sample_count) {
-                break;
+                if (!loop) {
+                    break;
+                }
+
+                wav_playback_sample = 0;
             }
 
             u32 buffer_padding;
