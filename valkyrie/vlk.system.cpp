@@ -135,7 +135,7 @@ struct wav_header {
 sound vlk::load_sound_wav_pcm_s16le(std::filesystem::path path) {
     const sound sound = load_binary_file(path);
 
-    u32 id = *reinterpret_cast<const u32 *>(&sound[70]);
+    //u32 id = *reinterpret_cast<const u32 *>(&sound[70]);
 
     auto header = *reinterpret_cast<const wav_header *>(&sound[0]);
     assert(header.riff_id         == 1179011410); // "RIFF"

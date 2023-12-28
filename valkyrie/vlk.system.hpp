@@ -16,6 +16,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <thread>
+#include <span>
 
 #include "vlk.types.hpp"
 #include "vlk.gfx.hpp"
