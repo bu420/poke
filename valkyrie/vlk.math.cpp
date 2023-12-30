@@ -5,20 +5,20 @@
 using namespace vlk;
 
 mat3::mat3(f32 init) {
-    for (u8 col = 0; col < 3; ++col) {
-        for (u8 row = 0; row < 3; ++row) {
-            (*this)[col][row] = 0;
+    for (u32 col = 0; col < 3; ++col) {
+        for (u32 row = 0; row < 3; ++row) {
+            m_elems[col][row] = 0;
         }
     }
-    for (u8 i = 0; i < 3; ++i) {
-        (*this)[i][i] = init;
+    for (u32 i = 0; i < 3; ++i) {
+        m_elems[i][i] = init;
     }
 }
 
 mat3::mat3(const mat4 &m) {
-    for (u8 col = 0; col < 3; ++col) {
-        for (u8 row = 0; row < 3; ++row) {
-            (*this)[col][row] = m[col][row];
+    for (u32 col = 0; col < 3; ++col) {
+        for (u32 row = 0; row < 3; ++row) {
+            m_elems[col][row] = m[col][row];
         }
     }
 }
@@ -26,30 +26,26 @@ mat3::mat3(const mat4 &m) {
 mat3 mat3::transpose() const {
     mat3 m;
 
-    for (u8 col = 0; col < 3; col++) {
-        for (u8 row = 0; row < 3; row++) {
-            m[col][row] = (*this)[row][col];
+    for (u32 col = 0; col < 3; ++col) {
+        for (u32 row = 0; row < 3; ++row) {
+            m[col][row] = m_elems[row][col];
         }
     }
 
     return m;
 }
 
-vec3f &mat3::operator [] (u8 x) {
-    return m[x];
-}
+vec3f &mat3::operator[](u32 x) { return m_elems[x]; }
 
-const vec3f &mat3::operator [] (u8 x) const {
-    return m[x];
-}
+const vec3f &mat3::operator[](u32 x) const { return m_elems[x]; }
 
-mat3 mat3::operator * (const mat3 &m) const {
+mat3 mat3::operator*(const mat3 &m) const {
     mat3 result;
 
-    for (u8 x = 0; x < 3; x++) {
-        for (u8 y = 0; y < 3; y++) {
-            for (u8 i = 0; i < 3; i++) {
-                result[x][y] += (*this)[x][i] * m[i][y];
+    for (u32 x = 0; x < 3; ++x) {
+        for (u32 y = 0; y < 3; ++y) {
+            for (u32 i = 0; i < 3; ++i) {
+                result[x][y] += m_elems[x][i] * m[i][y];
             }
         }
     }
@@ -57,14 +53,16 @@ mat3 mat3::operator * (const mat3 &m) const {
     return result;
 }
 
-vec3f mat3::operator * (const vec3f &v) const {
-    vec3f result;
+vec3f mat3::operator*(const vec3f &v) const {
+    vec3f result{};
 
-    for (u8 x = 0; x < 3; x++) {
+    for (u32 x = 0; x < 3; ++x) {
         f32 i = 0;
-        for (u8 y = 0; y < 3; y++) {
-            i += (*this)[x][y] * v[y];
+
+        for (u32 y = 0; y < 3; ++y) {
+            i += m_elems[x][y] * v[y];
         }
+
         result[x] = i;
     }
 
@@ -72,13 +70,13 @@ vec3f mat3::operator * (const vec3f &v) const {
 }
 
 mat4::mat4(f32 init) {
-    for (u8 col = 0; col < 4; ++col) {
-        for (u8 row = 0; row < 4; ++row) {
-            (*this)[col][row] = 0;
+    for (u32 col = 0; col < 4; ++col) {
+        for (u32 row = 0; row < 4; ++row) {
+            m_elems[col][row] = 0;
         }
     }
-    for (u8 i = 0; i < 4; ++i) {
-        (*this)[i][i] = init;
+    for (u32 i = 0; i < 4; ++i) {
+        m_elems[i][i] = init;
     }
 }
 
@@ -142,9 +140,9 @@ mat4 mat4::scale(const vec3f &multiplier) const {
 mat4 mat4::transpose() const {
     mat4 m;
 
-    for (u8 col = 0; col < 4; col++) {
-        for (u8 row = 0; row < 4; row++) {
-            m[col][row] = (*this)[row][col];
+    for (u32 col = 0; col < 4; ++col) {
+        for (u32 row = 0; row < 4; ++row) {
+            m[col][row] = m_elems[row][col];
         }
     }
 
@@ -152,32 +150,33 @@ mat4 mat4::transpose() const {
 }
 
 mat4 mat4::inverse() const {
-    f32 a2323{m[2][2] * m[3][3] - m[2][3] * m[3][2]};
-    f32 a1323{m[2][1] * m[3][3] - m[2][3] * m[3][1]};
-    f32 a1223{m[2][1] * m[3][2] - m[2][2] * m[3][1]};
-    f32 a0323{m[2][0] * m[3][3] - m[2][3] * m[3][0]};
-    f32 a0223{m[2][0] * m[3][2] - m[2][2] * m[3][0]};
-    f32 a0123{m[2][0] * m[3][1] - m[2][1] * m[3][0]};
-    f32 a2313{m[1][2] * m[3][3] - m[1][3] * m[3][2]};
-    f32 a1313{m[1][1] * m[3][3] - m[1][3] * m[3][1]};
-    f32 a1213{m[1][1] * m[3][2] - m[1][2] * m[3][1]};
-    f32 a2312{m[1][2] * m[2][3] - m[1][3] * m[2][2]};
-    f32 a1312{m[1][1] * m[2][3] - m[1][3] * m[2][1]};
-    f32 a1212{m[1][1] * m[2][2] - m[1][2] * m[2][1]};
-    f32 a0313{m[1][0] * m[3][3] - m[1][3] * m[3][0]};
-    f32 a0213{m[1][0] * m[3][2] - m[1][2] * m[3][0]};
-    f32 a0312{m[1][0] * m[2][3] - m[1][3] * m[2][0]};
-    f32 a0212{m[1][0] * m[2][2] - m[1][2] * m[2][0]};
-    f32 a0113{m[1][0] * m[3][1] - m[1][1] * m[3][0]};
-    f32 a0112{m[1][0] * m[2][1] - m[1][1] * m[2][0]};
+    const auto &m = m_elems;
 
-    f32 det{m[0][0] * (m[1][1] * a2323 - m[1][2] * a1323 + m[1][3] * a1223) -
-            m[0][1] * (m[1][0] * a2323 - m[1][2] * a0323 + m[1][3] * a0223) +
-            m[0][2] * (m[1][0] * a1323 - m[1][1] * a0323 + m[1][3] * a0123) -
-            m[0][3] * (m[1][0] * a1223 - m[1][1] * a0223 + m[1][2] * a0123)};
+    f32 a2323 = m[2][2] * m[3][3] - m[2][3] * m[3][2];
+    f32 a1323 = m[2][1] * m[3][3] - m[2][3] * m[3][1];
+    f32 a1223 = m[2][1] * m[3][2] - m[2][2] * m[3][1];
+    f32 a0323 = m[2][0] * m[3][3] - m[2][3] * m[3][0];
+    f32 a0223 = m[2][0] * m[3][2] - m[2][2] * m[3][0];
+    f32 a0123 = m[2][0] * m[3][1] - m[2][1] * m[3][0];
+    f32 a2313 = m[1][2] * m[3][3] - m[1][3] * m[3][2];
+    f32 a1313 = m[1][1] * m[3][3] - m[1][3] * m[3][1];
+    f32 a1213 = m[1][1] * m[3][2] - m[1][2] * m[3][1];
+    f32 a2312 = m[1][2] * m[2][3] - m[1][3] * m[2][2];
+    f32 a1312 = m[1][1] * m[2][3] - m[1][3] * m[2][1];
+    f32 a1212 = m[1][1] * m[2][2] - m[1][2] * m[2][1];
+    f32 a0313 = m[1][0] * m[3][3] - m[1][3] * m[3][0];
+    f32 a0213 = m[1][0] * m[3][2] - m[1][2] * m[3][0];
+    f32 a0312 = m[1][0] * m[2][3] - m[1][3] * m[2][0];
+    f32 a0212 = m[1][0] * m[2][2] - m[1][2] * m[2][0];
+    f32 a0113 = m[1][0] * m[3][1] - m[1][1] * m[3][0];
+    f32 a0112 = m[1][0] * m[2][1] - m[1][1] * m[2][0];
 
+    f32 det = m[0][0] * (m[1][1] * a2323 - m[1][2] * a1323 + m[1][3] * a1223) -
+              m[0][1] * (m[1][0] * a2323 - m[1][2] * a0323 + m[1][3] * a0223) +
+              m[0][2] * (m[1][0] * a1323 - m[1][1] * a0323 + m[1][3] * a0123) -
+              m[0][3] * (m[1][0] * a1223 - m[1][1] * a0223 + m[1][2] * a0123);
 
-    assert(det > 0 && "Matrix is not invertible.");
+    VLK_ASSERT(det > 0, "Matrix is not invertible.");
     det = 1.0f / det;
 
     mat4 result;
@@ -201,21 +200,13 @@ mat4 mat4::inverse() const {
     return result;
 }
 
-vec4f &mat4::operator [] (u8 x) {
-    return m[x];
-}
-
-const vec4f &mat4::operator [] (u8 x) const {
-    return m[x];
-}
-
-mat4 mat4::operator * (const mat4 &m) const {
+mat4 mat4::operator*(const mat4 &m) const {
     mat4 result;
 
-    for (u8 x = 0; x < 4; x++) {
-        for (u8 y = 0; y < 4; y++) {
-            for (u8 i = 0; i < 4; i++) {
-                result[x][y] += (*this)[x][i] * m[i][y];
+    for (u32 x = 0; x < 4; x++) {
+        for (u32 y = 0; y < 4; y++) {
+            for (u32 i = 0; i < 4; i++) {
+                result[x][y] += m_elems[x][i] * m[i][y];
             }
         }
     }
@@ -223,19 +214,21 @@ mat4 mat4::operator * (const mat4 &m) const {
     return result;
 }
 
-mat4 &mat4::operator *= (const mat4 &m) {
+mat4 &mat4::operator*=(const mat4 &m) {
     *this = *this * m;
     return *this;
 }
 
-vec4f mat4::operator * (const vec4f &v) const {
-    vec4f result;
+vec4f mat4::operator*(const vec4f &v) const {
+    vec4f result{};
 
-    for (u8 x = 0; x < 4; x++) {
+    for (u32 x = 0; x < 4; x++) {
         f32 i = 0;
-        for (u8 y = 0; y < 4; y++) {
-            i += (*this)[x][y] * v[y];
+
+        for (u32 y = 0; y < 4; y++) {
+            i += m_elems[x][y] * v[y];
         }
+
         result[x] = i;
     }
 
@@ -243,10 +236,10 @@ vec4f mat4::operator * (const vec4f &v) const {
 }
 
 mat4 vlk::look_at(vec3f pos, vec3f target, vec3f up) {
-    vec3f diff{target - pos};
-    vec3f forward{diff.normalize()};
-    vec3f right{forward.cross(up).normalize()};
-    vec3f local_up{right.cross(forward).normalize()};
+    vec3f diff     = target - pos;
+    vec3f forward  = diff.normalize();
+    vec3f right    = forward.cross(up).normalize();
+    vec3f local_up = right.cross(forward).normalize();
 
     mat4 m{1.0f};
     m[0][0] = right.x();
@@ -265,7 +258,7 @@ mat4 vlk::look_at(vec3f pos, vec3f target, vec3f up) {
 }
 
 mat4 vlk::perspective(f32 aspect, f32 fov, f32 near, f32 far) {
-    f32 half_tan{std::tan(fov / 2)};
+    f32 half_tan = std::tan(fov / 2);
 
     mat4 m;
     m[0][0] = 1 / (half_tan * aspect);
@@ -276,61 +269,51 @@ mat4 vlk::perspective(f32 aspect, f32 fov, f32 near, f32 far) {
     return m;
 }
 
-quaternion::quaternion(const vec4f &v) :
-    arr{v} {
-}
-
-quaternion::quaternion(const vec3f &axis, f32 angle) {
-    set(axis, angle);
-}
-
 void quaternion::set(const vec3f &axis, f32 angle) {
     f32 half_angle = 0.5f * angle;
-    f32 s = std::sin(half_angle);
-    arr.x() = s * axis.x();
-    arr.y() = s * axis.y();
-    arr.z() = s * axis.z();
-    arr.w() = std::cos(half_angle);
+    f32 s          = std::sin(half_angle);
+
+    vec.x() = s * axis.x();
+    vec.y() = s * axis.y();
+    vec.z() = s * axis.z();
+    vec.w() = std::cos(half_angle);
 }
 
 std::pair<vec3f, f32> quaternion::to_axis_and_angle() const {
     vec3f axis;
-    f32 angle = 2.0f * std::acos(arr.w());
+    f32 angle = 2.0f * std::acos(vec.w());
 
-    f32 l = std::sqrt(1.0f - std::pow(arr.w(), 2.0f));
+    f32 l = std::sqrt(1.0f - std::pow(vec.w(), 2.0f));
 
     if (l == 0.0f) {
         axis = {0.0f, 0.0f, 0.0f};
-    }
-    else {
-        l = 1.0f / l;
-        axis = arr.xyz() * l;
+    } else {
+        l    = 1.0f / l;
+        axis = vec.xyz() * l;
     }
 
     return std::make_pair(axis, angle);
 }
 
 void quaternion::integrate(const vec3f &dv, f32 dt) {
-    quaternion q{{dv.x() * dt, dv.y() * dt, dv.z() * dt, 0.0f}};
+    quaternion q{
+        {dv.x() * dt, dv.y() * dt, dv.z() * dt, 0.0f}
+    };
 
     q *= *this;
 
-    arr.x() += q.arr.x() * 0.5f;
-    arr.y() += q.arr.y() * 0.5f;
-    arr.z() += q.arr.z() * 0.5f;
-    arr.w() += q.arr.w() * 0.5f;
+    vec.x() += q.vec.x() * 0.5f;
+    vec.y() += q.vec.y() * 0.5f;
+    vec.z() += q.vec.z() * 0.5f;
+    vec.w() += q.vec.w() * 0.5f;
 
     *this = normalize();
 }
 
 quaternion quaternion::normalize() const {
-    vec4f v = arr;
+    vec4f v = vec;
 
-    f32 d = 
-        std::pow(v.x(), 2.0f) + 
-        std::pow(v.y(), 2.0f) + 
-        std::pow(v.z(), 2.0f) + 
-        std::pow(v.w(), 2.0f);
+    f32 d = std::pow(v.x(), 2.0f) + std::pow(v.y(), 2.0f) + std::pow(v.z(), 2.0f) + std::pow(v.w(), 2.0f);
 
     if (d == 0.0f) {
         v.w() = 1.0f;
@@ -346,18 +329,18 @@ quaternion quaternion::normalize() const {
 }
 
 mat3 quaternion::to_mat3() const {
-    f32 x = 2.0f * arr.x();
-    f32 y = 2.0f * arr.y();
-    f32 z = 2.0f * arr.z();
-    f32 xx = arr.x() * x;
-    f32 xy = arr.x() * y;
-    f32 xz = arr.x() * z;
-    f32 xw = arr.w() * x;
-    f32 yy = arr.y() * y;
-    f32 yz = arr.y() * z;
-    f32 yw = arr.w() * y;
-    f32 zz = arr.z() * z;
-    f32 zw = arr.w() * z;
+    f32 x  = 2.0f * vec.x();
+    f32 y  = 2.0f * vec.y();
+    f32 z  = 2.0f * vec.z();
+    f32 xx = vec.x() * x;
+    f32 xy = vec.x() * y;
+    f32 xz = vec.x() * z;
+    f32 xw = vec.w() * x;
+    f32 yy = vec.y() * y;
+    f32 yz = vec.y() * z;
+    f32 yw = vec.w() * y;
+    f32 zz = vec.z() * z;
+    f32 zw = vec.w() * z;
 
     mat3 m;
     m[0][0] = 1.0f - yy - zz;
@@ -373,16 +356,16 @@ mat3 quaternion::to_mat3() const {
     return m;
 }
 
-quaternion quaternion::operator * (const quaternion &q) const {
-    return quaternion{{
-        arr.w() * q.arr.x() + arr.x() * q.arr.w() + arr.y() * q.arr.z() - arr.z() * q.arr.y(),
-        arr.w() * q.arr.y() + arr.y() * q.arr.w() + arr.z() * q.arr.x() - arr.x() * q.arr.z(),
-        arr.w() * q.arr.z() + arr.z() * q.arr.w() + arr.x() * q.arr.y() - arr.y() * q.arr.x(),
-        arr.w() * q.arr.w() - arr.x() * q.arr.x() - arr.y() * q.arr.y() - arr.z() * q.arr.z()
-    }};
+quaternion quaternion::operator*(const quaternion &q) const {
+    return quaternion{
+        {vec.w() * q.vec.x() + vec.x() * q.vec.w() + vec.y() * q.vec.z() - vec.z() * q.vec.y(),
+         vec.w() * q.vec.y() + vec.y() * q.vec.w() + vec.z() * q.vec.x() - vec.x() * q.vec.z(),
+         vec.w() * q.vec.z() + vec.z() * q.vec.w() + vec.x() * q.vec.y() - vec.y() * q.vec.x(),
+         vec.w() * q.vec.w() - vec.x() * q.vec.x() - vec.y() * q.vec.y() - vec.z() * q.vec.z()}
+    };
 }
 
-quaternion &quaternion::operator *= (const quaternion &q) {
+quaternion &quaternion::operator*=(const quaternion &q) {
     *this = *this * q;
     return *this;
 }

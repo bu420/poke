@@ -5,16 +5,7 @@
 
 using namespace vlk;
 
-struct rect {
-    size_t x;
-    size_t y;
-    size_t w;
-    size_t h;
-};
-
-static void render_quad(const rect &dst, 
-                        const rect &src, 
-                        const image &image, 
+static void render_quad(const rect<size_t> &dst, const rect<size_t> &src, const image &image,
                         color_buffer &color_buf) {
     /*std::array vertices{
         vertex{{1.0f, 1.0f, 0.0f, 1.0f}, attribute{vec2f{1.0f, 1.0f}}},
@@ -42,10 +33,7 @@ static void render_quad(const rect &dst,
                           .pixel_shader = pixel_shader});*/
 }
 
-static void blit(size_t dst_x,
-                 size_t dst_y,
-                 const rect &src,
-                 const image &image,
+static void blit(size_t dst_x, size_t dst_y, const rect<size_t> &src, const image &image,
                  color_buffer &color_buf) {
     assert(image.channels == 4);
 
@@ -53,10 +41,8 @@ static void blit(size_t dst_x,
         for (size_t y = 0; y <= src.h; ++y) {
             auto src_pixel = image.at(src.x + x, src.y + y);
 
-            color_buf.at(dst_x + x, dst_y + y) = color_rgba{*(src_pixel + 0),
-                                                            *(src_pixel + 1),
-                                                            *(src_pixel + 2),
-                                                            *(src_pixel + 3)};
+            color_buf.at(dst_x + x, dst_y + y) =
+                color_rgba{*(src_pixel + 0), *(src_pixel + 1), *(src_pixel + 2), *(src_pixel + 3)};
         }
     }
 }
@@ -68,28 +54,29 @@ int main() {
 
     try {
         ui_image = vlk::load_image("../assets/default_window.png");
-    }
-    catch (std::runtime_error e) {
+    } catch (std::runtime_error e) {
         std::print("{}\n", e.what());
     }
 
-    size_t screen_width = GetSystemMetrics(SM_CXSCREEN);
+    size_t screen_width  = GetSystemMetrics(SM_CXSCREEN);
     size_t screen_height = GetSystemMetrics(SM_CYSCREEN);
 
     color_buffer color_buf{screen_width, screen_height};
 
-    window win{{.title = "Hello World",
-                .width = static_cast<i32>(screen_width),
-                .height = static_cast<i32>(screen_height),
-                .default_ui = false,
-                .transparent = true}};
+    window win{
+        {.title       = "Hello World",
+         .width       = static_cast<i32>(screen_width),
+         .height      = static_cast<i32>(screen_height),
+         .default_ui  = false,
+         .transparent = true}
+    };
 
-    while (!win.get_should_close()) {
+    while (!win.should_close()) {
         win.poll_events();
 
         color_buf.clear({0, 0, 0, 0});
 
-        blit(100, 100, {0, 0, ui_image.width, ui_image.height}, ui_image, color_buf);
+        blit(100, 100, {0, 0, ui_image.width(), ui_image.height()}, ui_image, color_buf);
 
         win.swap_buffers(color_buf);
     }

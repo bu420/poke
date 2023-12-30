@@ -5,6 +5,14 @@
 #include "vlk.vec.hpp"
 
 namespace vlk {
+    template <typename T>
+    struct rect {
+        T x;
+        T y;
+        T w;
+        T h;
+    };
+
     class mat4;
 
     class mat3 {
@@ -14,14 +22,14 @@ namespace vlk {
 
         mat3 transpose() const;
 
-        vec3f &operator [] (u8 x);
-        const vec3f &operator [] (u8 x) const;
+        vec3f &operator[](u32 x);
+        const vec3f &operator[](u32 x) const;
 
-        mat3 operator * (const mat3 &m) const;
-        vec3f operator * (const vec3f &v) const;
+        mat3 operator*(const mat3 &m) const;
+        vec3f operator*(const vec3f &v) const;
 
     private:
-        std::array<vec3f, 3> m;
+        std::array<vec3f, 3> m_elems;
     };
 
     class mat4 {
@@ -37,15 +45,15 @@ namespace vlk {
         mat4 transpose() const;
         mat4 inverse() const;
 
-        vec4f &operator [] (u8 x);
-        const vec4f &operator [] (u8 x) const;
+        vec4f &operator[](u32 x) { return m_elems[x]; }
+        const vec4f &operator[](u32 x) const { return m_elems[x]; }
 
-        mat4 operator * (const mat4 &m) const;
-        mat4 &operator *= (const mat4 &m);
-        vec4f operator * (const vec4f &v) const;
+        mat4 operator*(const mat4 &m) const;
+        mat4 &operator*=(const mat4 &m);
+        vec4f operator*(const vec4f &v) const;
 
     private:
-        std::array<vec4f, 4> m;
+        std::array<vec4f, 4> m_elems;
     };
 
     mat4 look_at(vec3f pos, vec3f target, vec3f up);
@@ -53,9 +61,11 @@ namespace vlk {
 
     class quaternion {
     public:
+        vec4f vec;
+
         quaternion() = default;
-        quaternion(const vec4f &v);
-        quaternion(const vec3f &axis, f32 angle);
+        quaternion(const vec4f &v) : vec{v} {}
+        quaternion(const vec3f &axis, f32 angle) { set(axis, angle); }
 
         void set(const vec3f &axis, f32 angle);
         std::pair<vec3f, f32> to_axis_and_angle() const;
@@ -63,10 +73,7 @@ namespace vlk {
         quaternion normalize() const;
         mat3 to_mat3() const;
 
-        quaternion operator * (const quaternion &q) const;
-        quaternion &operator *= (const quaternion &q);
-
-    private:
-        vec4f arr;
+        quaternion operator*(const quaternion &q) const;
+        quaternion &operator*=(const quaternion &q);
     };
-}
+}  // namespace vlk

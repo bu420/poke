@@ -67,7 +67,7 @@ namespace vlk {
 
     template <typename T>
     using const_handle = std::list<T>::const_iterator;
-    
+
     class rigid_body {
     public:
         handle<collider> add_collider(const collider &collider);
@@ -139,7 +139,7 @@ namespace vlk {
     struct manifold {
         handle<collider> collider_a;
         handle<collider> collider_b;
-        
+
         vec3f normal;
         std::array<vec3f, 2> tangents;
         std::array<contact, 8> contacts;
@@ -175,4 +175,4 @@ namespace vlk {
         vec3f gravity;
         i32 iterations;
     };
-}
+}  // namespace vlk

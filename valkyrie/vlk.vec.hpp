@@ -2,7 +2,6 @@
 
 #include <array>
 #include <cmath>
-#include <cassert>
 
 #include "vlk.types.hpp"
 
@@ -12,51 +11,39 @@ namespace vlk {
 
     template <typename T>
     class vec2 {
-    private:
-        std::array<T, 2> arr;
-
     public:
         vec2() = default;
-        vec2(T a, T b) : arr{a, b} {}
+        vec2(T a, T b) : m_arr{a, b} {}
 
-        T* begin() { return &arr[0]; }
-        const T* begin() const { return &arr[0]; }
-        T* end() { return &arr[1]; }
-        const T* end() const { return &arr[1]; }
+        T* begin() { return &m_arr[0]; }
+        const T* begin() const { return &m_arr[0]; }
+        T* end() { return &m_arr[1]; }
+        const T* end() const { return &m_arr[1]; }
 
-        vec2<T> normalize() const {
-            return *this / length();
-        }
-        T length() const {
-            return std::sqrt(x() * x() + y() * y());
-        }
+        vec2<T> normalize() const { return *this / length(); }
+        T length() const { return std::sqrt(x() * x() + y() * y()); }
 
-        T min() const {
-            return std::min(x(), y());
-        }
-        T max() const {
-            return std::max(x(), y());
-        }
-        vec2<T> min(const vec2<T> &v) const {
-            return {std::min(x(), v.x()), std::min(y(), v.y())};
-        }
-        vec2<T> max(const vec2<T> &v) const {
-            return {std::max(x(), v.x()), std::max(y(), v.y())};
+        T min() const { return std::min(x(), y()); }
+        T max() const { return std::max(x(), y()); }
+        vec2<T> min(const vec2<T>& v) const { return {std::min(x(), v.x()), std::min(y(), v.y())}; }
+        vec2<T> max(const vec2<T>& v) const { return {std::max(x(), v.x()), std::max(y(), v.y())}; }
+
+        vec2<T> lerp(const vec2<T>& v, f32 amount) const {
+            return {std::lerp(x(), v.x(), amount), std::lerp(y(), v.y(), amount)};
         }
 
-        T& operator [] (int i) {
-            assert(i >= 0 && i < 2 && "Index outside bounds.");
-            return arr[i];
+        T& operator[](int i) {
+            VLK_ASSERT_FAST(i >= 0 && i < 2, "Index outside bounds.");
+            return m_arr[i];
         }
-        T operator [] (int i) const {
-            assert(i >= 0 && i < 2 && "Index outside bounds.");
-            return arr[i];
-        }
-
-        bool operator == (const vec2<T>& v) const {
-            return x() == v.x() && y() == v.y();
+        T operator[](int i) const {
+            VLK_ASSERT_FAST(i >= 0 && i < 2, "Index outside bounds.");
+            return m_arr[i];
         }
 
+        bool operator==(const vec2<T>& v) const { return x() == v.x() && y() == v.y(); }
+
+        // clang-format off
         vec2<T> operator-() const { return vec2<T>(-x(), -y()); }
         vec2<T> operator+(const vec2<T>& v) const { return vec2<T>(x() + v.x(), y() + v.y()); }
         vec2<T> operator+(T scalar) const { return vec2<T>(x() + scalar, y() + scalar); }
@@ -74,25 +61,29 @@ namespace vlk {
         vec2<T> operator/(T scalar) const { return vec2<T>(x() / scalar, y() / scalar); }
         vec2<T>& operator/=(const vec2<T>& v) { x() /= v.x(); y() /= v.y(); return *this; }
         vec2<T>& operator/=(T scalar) { x() /= scalar; y() /= scalar; return *this; }
+        // clang-format on
 
-        T& x() { return arr[0]; }
-        const T& x() const { return arr[0]; }
-        T& y() { return arr[1]; }
-        const T& y() const { return arr[1]; }
-        T& r() { return arr[0]; }
-        const T& r() const { return arr[0]; }
-        T& g() { return arr[1]; }
-        const T& g() const { return arr[1]; }
-        T& u() { return arr[0]; }
-        const T& u() const { return arr[0]; }
-        T& v() { return arr[1]; }
-        const T& v() const { return arr[1]; }
+        T& x() { return m_arr[0]; }
+        const T& x() const { return m_arr[0]; }
+        T& y() { return m_arr[1]; }
+        const T& y() const { return m_arr[1]; }
+        T& r() { return m_arr[0]; }
+        const T& r() const { return m_arr[0]; }
+        T& g() { return m_arr[1]; }
+        const T& g() const { return m_arr[1]; }
+        T& u() { return m_arr[0]; }
+        const T& u() const { return m_arr[0]; }
+        T& v() { return m_arr[1]; }
+        const T& v() const { return m_arr[1]; }
         vec2<T> xy() const { return *this; }
         vec2<T> yx() const { return vec2<T>(y(), x()); }
         vec2<T> rg() const { return *this; }
         vec2<T> gr() const { return vec2<T>(g(), r()); }
         vec2<T> uv() const { return *this; }
         vec2<T> vu() const { return vec2<T>(v(), u()); }
+
+    private:
+        std::array<T, 2> m_arr;
     };
 
     using vec2f = vec2<f32>;
@@ -100,47 +91,41 @@ namespace vlk {
 
     template <typename T>
     class vec3 {
-    private:
-        std::array<T, 3> arr;
-
     public:
         vec3() = default;
-        vec3(T a, T b, T c) : arr{a, b, c} {}
-        vec3(const vec2<T>& ab, T c) : arr{ab[0], ab[1], c} {}
-        vec3(T a, const vec2<T>& bc) : arr{a, bc[0], bc[1]} {}
+        vec3(T a, T b, T c) : m_arr{a, b, c} {}
+        vec3(const vec2<T>& ab, T c) : m_arr{ab[0], ab[1], c} {}
+        vec3(T a, const vec2<T>& bc) : m_arr{a, bc[0], bc[1]} {}
 
-        T* begin() { return &arr[0]; }
-        const T* begin() const { return &arr[0]; }
-        T* end() { return &arr[2]; }
-        const T* end() const { return &arr[2]; }
+        T* begin() { return &m_arr[0]; }
+        const T* begin() const { return &m_arr[0]; }
+        T* end() { return &m_arr[2]; }
+        const T* end() const { return &m_arr[2]; }
 
-        vec3<T> normalize() const {
-            return *this / length();
-        }
-        T length() const {
-            return std::sqrt(x() * x() + y() * y() + z() * z());
-        }
+        vec3<T> normalize() const { return *this / length(); }
+        T length() const { return std::sqrt(x() * x() + y() * y() + z() * z()); }
 
-        T min() const {
-            return std::min({x(), y(), z()});
-        }
-        T max() const {
-            return std::max({x(), y(), z()});
-        }
-        vec3<T> min(const vec3<T> &v) const {
+        T min() const { return std::min({x(), y(), z()}); }
+        T max() const { return std::max({x(), y(), z()}); }
+        vec3<T> min(const vec3<T>& v) const {
             return {std::min(x(), v.x()), std::min(y(), v.y()), std::min(z(), v.z())};
         }
-        vec3<T> max(const vec3<T> &v) const {
+        vec3<T> max(const vec3<T>& v) const {
             return {std::max(x(), v.x()), std::max(y(), v.y()), std::max(z(), v.z())};
         }
 
-        T& operator [] (int i) {
-            assert(i >= 0 && i < 3 && "Index outside bounds.");
-            return arr[i];
+        vec3<T> lerp(const vec3<T>& v, f32 amount) const {
+            return {std::lerp(x(), v.x(), amount), std::lerp(y(), v.y(), amount),
+                    std::lerp(z(), v.z(), amount)};
         }
-        T operator [] (int i) const {
-            assert(i >= 0 && i < 3 && "Index outside bounds.");
-            return arr[i];
+
+        T& operator[](int i) {
+            VLK_ASSERT_FAST(i >= 0 && i < 3, "Index outside bounds.");
+            return m_arr[i];
+        }
+        T operator[](int i) const {
+            VLK_ASSERT_FAST(i >= 0 && i < 3, "Index outside bounds.");
+            return m_arr[i];
         }
 
         vec3<T> cross(const vec3<T>& v) const {
@@ -151,15 +136,11 @@ namespace vlk {
             return result;
         }
 
-        T dot(const vec3<T>& v) const {
-            return x() * v.x() + y() * v.y() + z() * v.z();
-        }
+        T dot(const vec3<T>& v) const { return x() * v.x() + y() * v.y() + z() * v.z(); }
 
-        bool operator == (const vec3<T>& v) const {
-            return x() == v.x() && y() == v.y() && z() == v.z();
-        }
+        bool operator==(const vec3<T>& v) const { return x() == v.x() && y() == v.y() && z() == v.z(); }
 
-        vec3<T> operator * (const mat3& m) const {
+        vec3<T> operator*(const mat3& m) const {
             vec3<T> result;
             for (int y = 0; y < 3; y++) {
                 float i = 0;
@@ -171,10 +152,9 @@ namespace vlk {
             return result;
         }
 
-        vec3<T>& operator *= (const mat3& m) {
-            return (*this = *this * m);
-        }
+        vec3<T>& operator*=(const mat3& m) { return (*this = *this * m); }
 
+        // clang-format off
         vec3<T> operator-() const { return vec3<T>(-x(), -y(), -z()); }
         vec3<T> operator+(const vec3<T>& v) const { return vec3<T>(x() + v.x(), y() + v.y(), z() + v.z()); }
         vec3<T> operator+(T scalar) const { return vec3<T>(x() + scalar, y() + scalar, z() + scalar); }
@@ -192,25 +172,26 @@ namespace vlk {
         vec3<T> operator/(T scalar) const { return vec3<T>(x() / scalar, y() / scalar, z() / scalar); }
         vec3<T>& operator/=(const vec3<T>& v) { x() /= v.x(); y() /= v.y(); z() /= v.z(); return *this; }
         vec3<T>& operator/=(T scalar) { x() /= scalar; y() /= scalar; z() /= scalar; return *this; }
+        // clang-format on
 
-        T& x() { return arr[0]; }
-        const T& x() const { return arr[0]; }
-        T& y() { return arr[1]; }
-        const T& y() const { return arr[1]; }
-        T& r() { return arr[0]; }
-        const T& r() const { return arr[0]; }
-        T& g() { return arr[1]; }
-        const T& g() const { return arr[1]; }
-        T& u() { return arr[0]; }
-        const T& u() const { return arr[0]; }
-        T& v() { return arr[1]; }
-        const T& v() const { return arr[1]; }
-        T& z() { return arr[2]; }
-        const T& z() const { return arr[2]; }
-        T& b() { return arr[2]; }
-        const T& b() const { return arr[2]; }
-        T& w() { return arr[2]; }
-        const T& w() const { return arr[2]; }
+        T& x() { return m_arr[0]; }
+        const T& x() const { return m_arr[0]; }
+        T& y() { return m_arr[1]; }
+        const T& y() const { return m_arr[1]; }
+        T& r() { return m_arr[0]; }
+        const T& r() const { return m_arr[0]; }
+        T& g() { return m_arr[1]; }
+        const T& g() const { return m_arr[1]; }
+        T& u() { return m_arr[0]; }
+        const T& u() const { return m_arr[0]; }
+        T& v() { return m_arr[1]; }
+        const T& v() const { return m_arr[1]; }
+        T& z() { return m_arr[2]; }
+        const T& z() const { return m_arr[2]; }
+        T& b() { return m_arr[2]; }
+        const T& b() const { return m_arr[2]; }
+        T& w() { return m_arr[2]; }
+        const T& w() const { return m_arr[2]; }
         vec2<T> xy() const { return vec2<T>(x(), y()); }
         vec2<T> yx() const { return vec2<T>(y(), x()); }
         vec2<T> rg() const { return vec2<T>(r(), g()); }
@@ -235,6 +216,9 @@ namespace vlk {
         vec3<T> vwu() const { return vec3<T>(v(), w(), u()); }
         vec3<T> wuv() const { return vec3<T>(w(), u(), v()); }
         vec3<T> wvu() const { return vec3<T>(w(), v(), u()); }
+
+    private:
+        std::array<T, 3> m_arr;
     };
 
     using vec3f = vec3<f32>;
@@ -242,61 +226,55 @@ namespace vlk {
 
     template <typename T>
     class vec4 {
-    private:
-        std::array<T, 4> arr;
-
     public:
         vec4() = default;
-        vec4(T a, T b, T c, T d) : arr{a, b, c, d} {}
-        vec4(const vec2<T>& ab, T c, T d) : arr{ab[0], ab[1], c, d} {}
-        vec4(T a, const vec2<T>& bc, T d) : arr{a, bc[0], bc[1], d} {}
-        vec4(T a, T b, const vec2<T>& cd) : arr{a, b, cd[0], cd[1]} {}
-        vec4(const vec2<T>& ab, const vec2<T>& cd) : arr{ab[0], ab[1], cd[0], cd[1]} {}
-        vec4(const vec3<T>& abc, T d) : arr{abc[0], abc[1], abc[2], d} {}
-        vec4(T a, const vec3<T>& bcd) : arr{a, bcd[0], bcd[1], bcd[2]} {}
+        vec4(T a, T b, T c, T d) : m_arr{a, b, c, d} {}
+        vec4(const vec2<T>& ab, T c, T d) : m_arr{ab[0], ab[1], c, d} {}
+        vec4(T a, const vec2<T>& bc, T d) : m_arr{a, bc[0], bc[1], d} {}
+        vec4(T a, T b, const vec2<T>& cd) : m_arr{a, b, cd[0], cd[1]} {}
+        vec4(const vec2<T>& ab, const vec2<T>& cd) : m_arr{ab[0], ab[1], cd[0], cd[1]} {}
+        vec4(const vec3<T>& abc, T d) : m_arr{abc[0], abc[1], abc[2], d} {}
+        vec4(T a, const vec3<T>& bcd) : m_arr{a, bcd[0], bcd[1], bcd[2]} {}
 
-        vec4(const vec2<T>& ab, T c) : arr{ab[0], ab[1], c} {}
-        vec4(T a, const vec2<T>& bc) : arr{a, bc[0], bc[1]} {}
+        vec4(const vec2<T>& ab, T c) : m_arr{ab[0], ab[1], c} {}
+        vec4(T a, const vec2<T>& bc) : m_arr{a, bc[0], bc[1]} {}
 
-        T* begin() { return &arr[0]; }
-        const T* begin() const { return &arr[0]; }
-        T* end() { return &arr[3]; }
-        const T* end() const { return &arr[3]; }
+        T* begin() { return &m_arr[0]; }
+        const T* begin() const { return &m_arr[0]; }
+        T* end() { return &m_arr[3]; }
+        const T* end() const { return &m_arr[3]; }
 
-        vec4<T> normalize() const {
-            return *this / length();
-        }
-        T length() const {
-            return std::sqrt(x() * x() + y() * y() + z() * z() + w() * w());
-        }
+        vec4<T> normalize() const { return *this / length(); }
+        T length() const { return std::sqrt(x() * x() + y() * y() + z() * z() + w() * w()); }
 
-        T min() const {
-            return std::min({x(), y(), z(), w()});
-        }
-        T max() const {
-            return std::max({x(), y(), z(), w()});
-        }
-        vec4<T> min(const vec4<T> &v) const {
+        T min() const { return std::min({x(), y(), z(), w()}); }
+        T max() const { return std::max({x(), y(), z(), w()}); }
+        vec4<T> min(const vec4<T>& v) const {
             return {std::min(x(), v.x()), std::min(y(), v.y()), std::min(z(), v.z()), std::min(w(), v.w())};
         }
-        vec4<T> max(const vec4<T> &v) const {
+        vec4<T> max(const vec4<T>& v) const {
             return {std::max(x(), v.x()), std::max(y(), v.y()), std::max(z(), v.z()), std::max(w(), v.w())};
         }
 
-        T& operator [] (int i) {
-            assert(i >= 0 && i < 4 && "Index outside bounds.");
-            return arr[i];
-        }
-        T operator [] (int i) const {
-            assert(i >= 0 && i < 4 && "Index outside bounds.");
-            return arr[i];
+        vec4<T> lerp(const vec4<T>& v, f32 amount) const {
+            return {std::lerp(x(), v.x(), amount), std::lerp(y(), v.y(), amount),
+                    std::lerp(z(), v.z(), amount), std::lerp(w(), v.w(), amount)};
         }
 
-        bool operator == (const vec4<T>& v) const {
+        T& operator[](int i) {
+            VLK_ASSERT_FAST(i >= 0 && i < 4, "Index outside bounds.");
+            return m_arr[i];
+        }
+        T operator[](int i) const {
+            VLK_ASSERT_FAST(i >= 0 && i < 4, "Index outside bounds.");
+            return m_arr[i];
+        }
+
+        bool operator==(const vec4<T>& v) const {
             return x() == v.x() && y() == v.y() && z() == v.z() && w() == v.w();
         }
 
-        vec4<T> operator * (const mat4& m) const {
+        vec4<T> operator*(const mat4& m) const {
             vec4<T> result;
             for (int y = 0; y < 4; y++) {
                 float i = 0;
@@ -308,10 +286,9 @@ namespace vlk {
             return result;
         }
 
-        vec4<T>& operator *= (const mat4& m) {
-            return (*this = *this * m);
-        }
+        vec4<T>& operator*=(const mat4& m) { return (*this = *this * m); }
 
+        // clang-format off
         vec4<T> operator-() const { return vec4<T>(-x(), -y(), -z(), -w()); }
         vec4<T> operator+(const vec4<T>& v) const { return vec4<T>(x() + v.x(), y() + v.y(), z() + v.z(), w() + v.w()); }
         vec4<T> operator+(T scalar) const { return vec4<T>(x() + scalar, y() + scalar, z() + scalar, w() + scalar); }
@@ -329,23 +306,24 @@ namespace vlk {
         vec4<T> operator/(T scalar) const { return vec4<T>(x() / scalar, y() / scalar, z() / scalar, w() / scalar); }
         vec4<T>& operator/=(const vec4<T>& v) { x() /= v.x(); y() /= v.y(); z() /= v.z(); w() /= v.w(); return *this; }
         vec4<T>& operator/=(T scalar) { x() /= scalar; y() /= scalar; z() /= scalar; w() /= scalar; return *this; }
+        // clang-format on
 
-        T& x() { return arr[0]; }
-        const T& x() const { return arr[0]; }
-        T& y() { return arr[1]; }
-        const T& y() const { return arr[1]; }
-        T& r() { return arr[0]; }
-        const T& r() const { return arr[0]; }
-        T& g() { return arr[1]; }
-        const T& g() const { return arr[1]; }
-        T& z() { return arr[2]; }
-        const T& z() const { return arr[2]; }
-        T& b() { return arr[2]; }
-        const T& b() const { return arr[2]; }
-        T& w() { return arr[3]; }
-        const T& w() const { return arr[3]; }
-        T& a() { return arr[3]; }
-        const T& a() const { return arr[3]; }
+        T& x() { return m_arr[0]; }
+        const T& x() const { return m_arr[0]; }
+        T& y() { return m_arr[1]; }
+        const T& y() const { return m_arr[1]; }
+        T& r() { return m_arr[0]; }
+        const T& r() const { return m_arr[0]; }
+        T& g() { return m_arr[1]; }
+        const T& g() const { return m_arr[1]; }
+        T& z() { return m_arr[2]; }
+        const T& z() const { return m_arr[2]; }
+        T& b() { return m_arr[2]; }
+        const T& b() const { return m_arr[2]; }
+        T& w() { return m_arr[3]; }
+        const T& w() const { return m_arr[3]; }
+        T& a() { return m_arr[3]; }
+        const T& a() const { return m_arr[3]; }
         vec2<T> xy() const { return vec2<T>(x(), y()); }
         vec2<T> yx() const { return vec2<T>(y(), x()); }
         vec2<T> rg() const { return vec2<T>(r(), g()); }
@@ -410,8 +388,11 @@ namespace vlk {
         vec4<T> agbr() const { return vec4<T>(a(), g(), b(), r()); }
         vec4<T> abrg() const { return vec4<T>(a(), b(), r(), g()); }
         vec4<T> abgr() const { return vec4<T>(a(), b(), g(), r()); }
+
+    private:
+        std::array<T, 4> m_arr;
     };
 
     using vec4f = vec4<f32>;
     using vec4i = vec4<i32>;
-}
+}  // namespace vlk

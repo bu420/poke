@@ -9,6 +9,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "flight_sim", "flight_sim\fl
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{C7E8D46B-543B-402D-B0D9-5D1D9E352296}"
 	ProjectSection(SolutionItems) = preProject
+		.clang-format = .clang-format
 		.gitattributes = .gitattributes
 		.gitignore = .gitignore
 		LICENSE = LICENSE

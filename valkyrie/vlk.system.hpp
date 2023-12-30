@@ -21,11 +21,8 @@
 #include "vlk.types.hpp"
 #include "vlk.gfx.hpp"
 
-#define VLK_BENCHMARK_START \
-    f64 _start = get_elapsed_time();
-
-#define VLK_BENCHMARK_END \
-    std::print("Benchmark: {}ms\n", get_elapsed_time() - _start);
+#define VLK_BENCHMARK_START f64 _start = get_elapsed_time();
+#define VLK_BENCHMARK_END   std::print("Benchmark: {}ms\n", get_elapsed_time() - _start);
 
 namespace vlk {
     void initialize();
@@ -48,7 +45,7 @@ namespace vlk {
         std::string_view title;
         i32 width;
         i32 height;
-        bool default_ui = true;
+        bool default_ui  = true;
         bool transparent = false;
     };
 
@@ -56,32 +53,34 @@ namespace vlk {
     public:
 #ifdef WINDOWS
         HWND hwnd;
-        
+
         HBITMAP bitmap;
         u32 *pixels;
 #endif
 
-        window(const window_params& params);
+        window(const window_params &params);
 
         void poll_events();
-        void swap_buffers(const color_buffer& color_buf);
+        void swap_buffers(const color_buffer &color_buf);
 
-        bool get_should_close() const;
-        void set_should_close(bool should_close);
+        bool should_close() const { return m_should_close; }
+        void close(bool should_close) { m_should_close = should_close; }
 
-        i32 get_width() const;
-        i32 get_height() const;
+        i32 width() const { return m_width; }
+        i32 height() const { return m_height; }
 
-        bool is_transparent() const;
+        bool is_transparent() const { return m_transparent; }
 
         void set_icon(const image &image);
 
     private:
-        bool should_close;
+        bool m_should_close;
 
-        i32 width;
-        i32 height;
+        i32 m_width;
+        i32 m_height;
 
-        bool transparent;
+        bool m_transparent;
     };
-}
+
+    model load_obj(std::filesystem::path path, bool flip_images_vertically = true);
+}  // namespace vlk
