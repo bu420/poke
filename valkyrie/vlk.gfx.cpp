@@ -357,6 +357,14 @@ std::vector<u8>::const_iterator image::sample(f32 x, f32 y) const {
               static_cast<size_t>(std::round(y * static_cast<f32>(m_height - 1))));
 }
 
+color_rgb image::to_rgb(std::vector<u8>::const_iterator iter) {
+    return {*(iter + 0), *(iter + 1), *(iter + 2)};
+}
+
+color_rgba image::to_rgba(std::vector<u8>::const_iterator iter) {
+    return {*(iter + 0), *(iter + 1), *(iter + 2), *(iter + 3)};
+}
+
 image image::flip_vertically(const image &image) {
     vlk::image result{image.width(), image.height(), image.channels()};
 

@@ -162,6 +162,9 @@ namespace vlk {
         std::vector<u8>::iterator sample(f32 x, f32 y);
         std::vector<u8>::const_iterator sample(f32 x, f32 y) const;
 
+        static color_rgb to_rgb(std::vector<u8>::const_iterator iter);
+        static color_rgba to_rgba(std::vector<u8>::const_iterator iter);
+
         static image flip_vertically(const image &image);
 
     private:

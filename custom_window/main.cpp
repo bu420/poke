@@ -22,10 +22,7 @@ static void blit(size_t dst_x, size_t dst_y, const rect<size_t> &src, const imag
     for (size_t x = 0; x < src.w; ++x) {
         for (size_t y = 0; y < src.h; ++y) {
             auto &dst_pixel = color_buf.at(dst_x + x, dst_y + y);
-
-            auto src_pixel_iter = image.at(src.x + x, src.y + y);
-            auto src_pixel = color_rgba{*(src_pixel_iter + 0), *(src_pixel_iter + 1), *(src_pixel_iter + 2),
-                                         *(src_pixel_iter + 3)};
+            auto src_pixel  = image::to_rgba(image.at(src.x + x, src.y + y));
 
             dst_pixel = vlk::default_color_blend(dst_pixel, src_pixel);
         }
