@@ -13,18 +13,8 @@
 #endif
 
 namespace vlk {
-    struct color_rgb {
-        u8 r;
-        u8 g;
-        u8 b;
-    };
-
-    struct color_rgba {
-        u8 r;
-        u8 g;
-        u8 b;
-        u8 a;
-    };
+    using color_rgb  = vec3<u8>;
+    using color_rgba = vec4<u8>;
 
     static_assert(sizeof(color_rgb) == 3 && sizeof(color_rgba) == 4);
 

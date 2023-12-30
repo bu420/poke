@@ -13,7 +13,12 @@ namespace vlk {
     class vec2 {
     public:
         vec2() = default;
-        vec2(T a, T b) : m_arr{a, b} {}
+
+        template <typename A, typename B>
+        vec2(A a, B b) : m_arr{static_cast<T>(a), static_cast<T>(b)} {}
+
+        template <typename U>
+        vec2(const vec2<U>& u) : vec2{u[0], u[1]} {}
 
         T* begin() { return &m_arr[0]; }
         const T* begin() const { return &m_arr[0]; }
@@ -93,9 +98,18 @@ namespace vlk {
     class vec3 {
     public:
         vec3() = default;
-        vec3(T a, T b, T c) : m_arr{a, b, c} {}
-        vec3(const vec2<T>& ab, T c) : m_arr{ab[0], ab[1], c} {}
-        vec3(T a, const vec2<T>& bc) : m_arr{a, bc[0], bc[1]} {}
+
+        template <typename A, typename B, typename C>
+        vec3(A a, B b, C c) : m_arr{static_cast<T>(a), static_cast<T>(b), static_cast<T>(c)} {}
+
+        template <typename A, typename B>
+        vec3(const vec2<A>& a, B b) : vec3{a[0], a[1], b} {}
+
+        template <typename A, typename B>
+        vec3(A a, const vec2<B>& b) : vec3{a, b[0], b[1]} {}
+
+        template <typename U>
+        vec3(const vec3<U>& u) : vec3{u[0], u[1], u[2]} {}
 
         T* begin() { return &m_arr[0]; }
         const T* begin() const { return &m_arr[0]; }
@@ -228,16 +242,31 @@ namespace vlk {
     class vec4 {
     public:
         vec4() = default;
-        vec4(T a, T b, T c, T d) : m_arr{a, b, c, d} {}
-        vec4(const vec2<T>& ab, T c, T d) : m_arr{ab[0], ab[1], c, d} {}
-        vec4(T a, const vec2<T>& bc, T d) : m_arr{a, bc[0], bc[1], d} {}
-        vec4(T a, T b, const vec2<T>& cd) : m_arr{a, b, cd[0], cd[1]} {}
-        vec4(const vec2<T>& ab, const vec2<T>& cd) : m_arr{ab[0], ab[1], cd[0], cd[1]} {}
-        vec4(const vec3<T>& abc, T d) : m_arr{abc[0], abc[1], abc[2], d} {}
-        vec4(T a, const vec3<T>& bcd) : m_arr{a, bcd[0], bcd[1], bcd[2]} {}
 
-        vec4(const vec2<T>& ab, T c) : m_arr{ab[0], ab[1], c} {}
-        vec4(T a, const vec2<T>& bc) : m_arr{a, bc[0], bc[1]} {}
+        template <typename A, typename B, typename C, typename D>
+        vec4(A a, B b, C c, D d)
+            : m_arr{static_cast<T>(a), static_cast<T>(b), static_cast<T>(c), static_cast<T>(d)} {}
+
+        template <typename A, typename B, typename C>
+        vec4(const vec2<A>& a, B b, C c) : vec4{a[0], a[1], b, c} {}
+
+        template <typename A, typename B, typename C>
+        vec4(A a, const vec2<B>& b, C c) : vec4{a, b[0], b[1], c} {}
+
+        template <typename A, typename B, typename C>
+        vec4(A a, B b, const vec2<C>& c) : vec4{a, b, c[0], c[1]} {}
+
+        template <typename A, typename B>
+        vec4(const vec2<A>& ab, const vec2<B>& cd) : vec4{ab[0], ab[1], cd[0], cd[1]} {}
+
+        template <typename A, typename B>
+        vec4(const vec3<A>& a, B b) : vec4{a[0], a[1], a[2], b} {}
+
+        template <typename A, typename B>
+        vec4(A a, const vec3<B>& b) : vec4{a, b[0], b[1], b[2]} {}
+
+        template <typename U>
+        vec4(const vec4<U>& a) : vec4{a[0], a[1], a[2], a[3]} {}
 
         T* begin() { return &m_arr[0]; }
         const T* begin() const { return &m_arr[0]; }

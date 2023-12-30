@@ -1,22 +1,17 @@
 #include "vlk.gfx.hpp"
 
-#include <algorithm>
-#include <fstream>
-#include <streambuf>
-#include <ranges>
-
 using namespace vlk;
 
 attrib attrib::lerp(const attrib &other, f32 amount) const {
     VLK_ASSERT_FAST(size == other.size, "Attribute sizes must match.");
 
-    vec4f data{};
+    vec4f result{};
 
     for (u32 i = 0; i < size; ++i) {
-        data[i] = std::lerp(data[i], other[i], amount);
+        result[i] = std::lerp(data[i], other[i], amount);
     }
 
-    return attrib{data, size};
+    return attrib{result, size};
 }
 
 void attrib::operator+=(const attrib &a) {
@@ -56,10 +51,9 @@ line_stepper::line_stepper(line line, calc_steps_based_on line_type) : m_i{0} {
         case calc_steps_based_on::largest_diff:
             m_steps = static_cast<i32>(std::max(std::abs(diff.x()), std::abs(diff.y())));
             break;
-
         case calc_steps_based_on::x_diff: m_steps = static_cast<i32>(std::abs(diff.x())); break;
-
         case calc_steps_based_on::y_diff: m_steps = static_cast<i32>(std::abs(diff.y())); break;
+        default: std::unreachable();
     }
 
     if (m_steps == 0) {
@@ -99,10 +93,15 @@ bool line_stepper::step() {
 }
 
 color_rgba vlk::default_color_blend(const color_rgba &old_color, const color_rgba &new_color) {
-    // TODO: find fast way to calculate:
-    // new_color.rgb * new_color.a + old_color * (1 - new_color.a)
+    vec4f ol = old_color;
+    vec4f ne = new_color;
 
-    return new_color;
+    ol.a() /= 255;
+    ne.a() /= 255;
+
+    f32 a = ne.a() + ol.a() * (1.0f - ne.a());
+
+    return {ne.rgb() * ne.a() + ol.rgb() * ol.a() * (1.0f - ne.a()) / a, a * 255.0f};
 }
 
 enum class component {
@@ -228,7 +227,8 @@ static void fill_triangle(const render_triangle_params &params) {
     for (auto &vertex : vertices) {
         auto &pos = vertex.pos;
 
-        assert(pos.w() != 0);
+        VLK_ASSERT_FAST(pos.w() != 0,
+                        "W can't be 0. Make sure to clip triangle before calling this function.");
 
         pos.x() /= pos.w();
         pos.y() /= pos.w();
@@ -326,7 +326,7 @@ void vlk::render_triangle(const render_triangle_params &params) {
     VLK_ASSERT_FAST(clipped_vertices.size() >= 3, "Can't render a polygon with less than 3 vertices.");
 
     for (size_t i = 1; i < clipped_vertices.size() - 1; ++i) {
-        render_triangle_params new_params{params};
+        render_triangle_params new_params = params;
         new_params.vertices = {clipped_vertices[0], clipped_vertices[i], clipped_vertices[i + 1]};
 
         fill_triangle(new_params);
@@ -387,10 +387,10 @@ color_rgba vlk::default_model_pixel_shader(const vertex &vertex, const model &mo
 
     if (material.albedo != model::null_index) {
         auto pixel = model.images[material.albedo].sample(tex_coord.x(), tex_coord.y());
-        result.r   = *pixel;
-        result.g   = *(pixel + 1);
-        result.b   = *(pixel + 2);
-        result.a   = *(pixel + 3);
+        result.r() = *pixel;
+        result.g() = *(pixel + 1);
+        result.b() = *(pixel + 2);
+        result.a() = *(pixel + 3);
     }
 
     return result;

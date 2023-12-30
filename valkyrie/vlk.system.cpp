@@ -362,7 +362,7 @@ void window::swap_buffers(const color_buffer &color_buf) {
 }
 
 void window::set_icon(const image &image) {
-    VLK_ASSERT(image.channels == 4, "Image must be RGBA.");
+    VLK_ASSERT(image.channels() == 4, "Image must be RGBA.");
 
     u32 *pixels          = new u32[image.width() * image.height()];
     HBITMAP color_bitmap = create_bitmap(hwnd, image.width(), image.height(), &pixels);

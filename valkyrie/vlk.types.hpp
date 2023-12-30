@@ -8,7 +8,7 @@
 
 #define VLK_ASSERT(expr, msg) assert(msg&& expr);
 
-#ifdef VLK_DEBUG_FAST
+#ifdef VLK_FAST_DEBUG
 #define VLK_ASSERT_FAST(expr, msg)                                                                           \
     do {                                                                                                     \
     } while (false);
