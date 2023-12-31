@@ -147,6 +147,24 @@ namespace vlk {
 
     void render_triangle(const render_triangle_params &params);
 
+    struct render_rect_color_params {
+        rect<size_t> dst;
+        color_rgba color;
+        color_buffer &color_buf;
+    };
+
+    void render_rect_color(const render_rect_color_params &params);
+
+    struct render_rect_color_rounded_params : render_rect_color_params {
+        f32 radius        = 0;
+        bool top_left     = true;
+        bool top_right    = true;
+        bool bottom_left  = true;
+        bool bottom_right = true;
+    };
+
+    void render_rect_color_rounded(const render_rect_color_rounded_params &params);
+
     class image {
     public:
         image() = default;
@@ -174,6 +192,15 @@ namespace vlk {
 
         std::vector<u8> m_data;
     };
+
+    struct blit_image_params {
+        vec2<size_t> dst;
+        rect<size_t> src;
+        const image &image;
+        color_buffer &color_buf;
+    };
+
+    void blit_image(const blit_image_params &params);
 
     struct model {
         struct material {

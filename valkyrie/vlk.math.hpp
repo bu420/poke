@@ -7,10 +7,8 @@
 namespace vlk {
     template <typename T>
     struct rect {
-        T x;
-        T y;
-        T w;
-        T h;
+        vec2<T> start;
+        vec2<T> end;
     };
 
     class mat4;

@@ -1,5 +1,7 @@
 #include "vlk.gfx.hpp"
 
+#include <algorithm>
+
 using namespace vlk;
 
 attrib attrib::lerp(const attrib &other, f32 amount) const {
@@ -332,6 +334,65 @@ void vlk::render_triangle(const render_triangle_params &params) {
         fill_triangle(new_params);
     }
 }
+
+static bool clip_rect(rect<size_t> &r, size_t width, size_t height) {
+    if (r.start.x() > r.end.x()) {
+        std::swap(r.start.x(), r.end.x());
+    }
+    if (r.start.y() > r.end.y()) {
+        std::swap(r.start.y(), r.end.y());
+    }
+
+    if (r.start.x() >= width || r.start.y() >= height || r.end.x() < 0 || r.end.y() < 0) {
+        return false;
+    }
+
+    r.start.x() = std::clamp(r.start.x(), static_cast<size_t>(0), width - 1);
+    r.start.y() = std::clamp(r.start.y(), static_cast<size_t>(0), height - 1);
+    r.end.x()   = std::clamp(r.end.x(), static_cast<size_t>(0), width - 1);
+    r.end.y()   = std::clamp(r.end.y(), static_cast<size_t>(0), height - 1);
+
+    return true;
+}
+
+void vlk::render_rect_color(const render_rect_color_params &params) {
+    rect<size_t> dst = params.dst;
+
+    if (!clip_rect(dst, params.color_buf.width(), params.color_buf.height())) {
+        return;
+    }
+
+    for (size_t x = dst.start.x(); x <= dst.end.x(); ++x) {
+        for (size_t y = dst.start.y(); y <= dst.end.y(); ++y) {
+            auto &pixel = params.color_buf.at(x, y);
+            pixel       = vlk::default_color_blend(pixel, params.color);
+        }
+    }
+}
+
+void vlk::render_rect_color_rounded(const render_rect_color_rounded_params &params) {
+    render_rect_color({params.dst, params.color, params.color_buf});
+}
+
+void vlk::blit_image(const blit_image_params &params) {
+    VLK_ASSERT(params.image.channels() == 4, "Image must be RGBA.");
+
+    rect<size_t> src = params.src;
+
+    if (!clip_rect(src, std::min(params.image.width(), params.color_buf.width()),
+                   std::min(params.image.height(), params.color_buf.height()))) {
+        return;
+    }
+
+    for (size_t x = 0; x < (src.end.x() - src.start.x()); ++x) {
+        for (size_t y = 0; y < (src.end.y() - src.start.y()); ++y) {
+            auto &dst_pixel = params.color_buf.at(params.dst.x() + x, params.dst.y() + y);
+            auto src_pixel  = image::to_rgba(params.image.at(src.start.x() + x, src.start.y() + y));
+            dst_pixel       = vlk::default_color_blend(dst_pixel, src_pixel);
+        }
+    }
+}
+
 image::image(size_t width, size_t height, size_t channels)
     : m_width{width}, m_height{height}, m_channels{channels} {
     m_data.resize(width * height * channels);

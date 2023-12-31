@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cmath>
+#include <algorithm>
 
 #include "vlk.types.hpp"
 
@@ -37,6 +38,10 @@ namespace vlk {
             return {std::lerp(x(), v.x(), amount), std::lerp(y(), v.y(), amount)};
         }
 
+        vec2<T> clamp(T min, T max) const {
+            return {std::clamp(x(), min, max), std::clamp(y(), min, max)};
+        }
+
         T& operator[](int i) {
             VLK_ASSERT_FAST(i >= 0 && i < 2, "Index outside bounds.");
             return m_arr[i];
@@ -46,7 +51,12 @@ namespace vlk {
             return m_arr[i];
         }
 
-        bool operator==(const vec2<T>& v) const { return x() == v.x() && y() == v.y(); }
+        /* bool operator==(const vec2<T>& v) const { return x() == v.x() && y() == v.y(); }
+
+        bool operator<(const vec2<T>& v) const { return x() < v.x() && y() < v.y(); }
+        bool operator>(const vec2<T>& v) const { return x() < v.x() && y() < v.y(); }*/
+
+        auto operator<=>(const vec2<T>& v) const = default;
 
         // clang-format off
         vec2<T> operator-() const { return vec2<T>(-x(), -y()); }
@@ -133,6 +143,10 @@ namespace vlk {
                     std::lerp(z(), v.z(), amount)};
         }
 
+        vec3<T> clamp(T min, T max) const {
+            return {std::clamp(x(), min, max), std::clamp(y(), min, max), std::clamp(z(), min, max)};
+        }
+
         T& operator[](int i) {
             VLK_ASSERT_FAST(i >= 0 && i < 3, "Index outside bounds.");
             return m_arr[i];
@@ -152,7 +166,9 @@ namespace vlk {
 
         T dot(const vec3<T>& v) const { return x() * v.x() + y() * v.y() + z() * v.z(); }
 
-        bool operator==(const vec3<T>& v) const { return x() == v.x() && y() == v.y() && z() == v.z(); }
+        // bool operator==(const vec3<T>& v) const { return x() == v.x() && y() == v.y() && z() == v.z(); }
+
+        auto operator<=>(const vec3<T>& v) const = default;
 
         vec3<T> operator*(const mat3& m) const {
             vec3<T> result;
@@ -290,6 +306,11 @@ namespace vlk {
                     std::lerp(z(), v.z(), amount), std::lerp(w(), v.w(), amount)};
         }
 
+        vec4<T> clamp(T min, T max) const {
+            return {std::clamp(x(), min, max), std::clamp(y(), min, max), std::clamp(z(), min, max),
+                    std::clamp(w(), min, max)};
+        }
+
         T& operator[](int i) {
             VLK_ASSERT_FAST(i >= 0 && i < 4, "Index outside bounds.");
             return m_arr[i];
@@ -299,9 +320,11 @@ namespace vlk {
             return m_arr[i];
         }
 
-        bool operator==(const vec4<T>& v) const {
+        /* bool operator==(const vec4<T>& v) const {
             return x() == v.x() && y() == v.y() && z() == v.z() && w() == v.w();
-        }
+        }*/
+
+        auto operator<=>(const vec4<T>& v) const = default;
 
         vec4<T> operator*(const mat4& m) const {
             vec4<T> result;

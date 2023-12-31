@@ -5,30 +5,6 @@
 
 using namespace vlk;
 
-static void render_rect_color(const rect<size_t> &dst, const color_rgba &color, color_buffer &color_buf) {
-    for (size_t x = 0; x < dst.w; ++x) {
-        for (size_t y = 0; y < dst.h; ++y) {
-            auto &pixel = color_buf.at(dst.x + x, dst.y + y);
-
-            pixel = vlk::default_color_blend(pixel, color);
-        }
-    }
-}
-
-static void blit(size_t dst_x, size_t dst_y, const rect<size_t> &src, const image &image,
-                 color_buffer &color_buf) {
-    assert(image.channels() == 4);
-
-    for (size_t x = 0; x < src.w; ++x) {
-        for (size_t y = 0; y < src.h; ++y) {
-            auto &dst_pixel = color_buf.at(dst_x + x, dst_y + y);
-            auto src_pixel  = image::to_rgba(image.at(src.x + x, src.y + y));
-
-            dst_pixel = vlk::default_color_blend(dst_pixel, src_pixel);
-        }
-    }
-}
-
 int main() {
     vlk::initialize();
 
@@ -62,8 +38,18 @@ int main() {
 
         color_buf.clear({0, 0, 0, 0});
 
-        render_rect_color({100, 100, 600, 400}, {255, 255, 255, 255}, color_buf);
-        blit(150, 150, rect<size_t>{0, 0, ui.width(), ui.height()}, ui, color_buf);
+        vlk::render_rect_color({
+            .dst = {{100, 100}, {700, 500}},
+              .color = {255, 255, 255, 255},
+              .color_buf = color_buf
+        });
+
+        vlk::blit_image({
+            .dst       = {150,    150                      },
+            .src       = {{0, 0}, {ui.width(), ui.height()}},
+            .image     = ui,
+            .color_buf = color_buf
+        });
 
         win.swap_buffers(color_buf);
     }
